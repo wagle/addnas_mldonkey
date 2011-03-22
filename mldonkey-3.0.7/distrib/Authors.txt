@@ -1,0 +1,44 @@
+Project Team
+------------
+b8_bavard        (bavard@mldonkey.net)
+Simon            (simon@mldonkey.net)
+b8_zoggy         (zoggy@bat8.org)
+Stéphane Goulet  (sgou@videotron.ca)
+
+Former Members
+--------------
+Olivier Vernin   (vernin@sor.inria.fr)
+Manuel Giraud    (manuel.giraud@inria.fr)
+Dimitri Ara      (savannah@mutu.net)
+
+Contributions
+-------------
+(please, if you have contributed, and are not listed here, send us a mail)
+
+Pango
+Norbert Lataille (Overnet)
+Goswin Brederlow
+Dirk Stoecker
+Felix Buenemann
+Andre Hinrichs
+Michael Panteleit
+Michael Reinsch
+moumar@netcourrier.com
+Mike Jones (html_mods)
+Beedauchon
+mld_thomas
+Soulburner
+Denis Fortin (Hightime)
+Spiralvoice
+Zet
+Amorphous
+Knocker
+Schlumpf
+su_blanc
+bogeyman
+jave
+
+This product includes GeoLite data created by MaxMind, available from http://maxmind.com/
+
+A complete overview about 3rd party libraries used can be found here:
+http://mldonkey.sourceforge.net/3rdParty

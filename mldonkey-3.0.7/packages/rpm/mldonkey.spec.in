@@ -1,0 +1,151 @@
+%define name       mldonkey
+%define Name       Mldonkey
+%define summary    Door to the 'donkey' network
+%define version    @MLDONKEY_VERSION@
+
+Name:           %{name}
+Version:        %{version}
+Summary:        %{summary}
+License:        GPL
+Source0:        %{name}.sources.tar.bz2
+URL:            http://www.mldonkey.org
+Group:          System/Servers
+BuildRoot:      %{_tmppath}/%{name}-buildroot
+
+%description
+ MLdonkey (mlnet) is a generic peer-to-peer file-sharing client, written in
+Objective-Caml, that can access the eDonkey2000, Overnet, Gnutella,
+BitTorrent and Soulseek networks. Gnutella2, Direct-Connect and Open-Napster
+networks also have alpha support.
+
+MLdonkey can be controlled via telnet (telnet 127.0.0.1 4000)
+and WEB (http://127.0.0.1:4080/) interfaces. It can also be
+controlled using various external GUI interfaces (mlgui).
+
+%package gui
+Summary:	Graphical frontend for mldonkey based on GTK
+Group:		Networking/Other
+
+%description gui
+The GTK interface for mldonkey provides a convenient way of managing
+all mldonkey operations. It gives details about conected servers,
+downloaded files, friends and lets one search for files in a pleasing
+way.
+
+%package init
+prereq:		rpm-helper
+Summary:	Init to launch mldonkey
+Group:		System/Server
+Requires:	mldonkey
+
+%description init
+This package contains init to launch mldonkey as a service
+
+%package ed2k_submit
+Summary:	This tool gives you an easy way to add a ed2k-link
+Group:		Graphical desktop/KDE
+Requires:	kdebase
+Requires:	perl-libwww-perl
+
+%description ed2k_submit
+This tool gives you an easy way to add a ed2k-link 
+(like ed2k://|file|filename.exe|21352658|72b0b287cab7d875ccc1d89ebe910b9g|) 
+with a single click to your mldonkey download queue.
+
+You need to edit /etc/sysconfig/mldonkey_submit
+
+%prep
+rm -rf $RPM_BUILD_ROOT
+%setup -n %{name}
+
+%build
+./configure -enable-batch -enable-local-prefix=/var/tmp/ocaml_for_mldonkey
+make
+perl -pi -e 's|/etc/sysconfig/mldonkey|/etc/sysconfig/mldonkey_submit|'  distrib/ed2k_submit/mldonkey_submit
+
+%install
+
+DONT_GPRINTIFY=1
+export DONT_GPRINTIFY
+
+# core
+install -d -m 755 %{buildroot}%{_bindir}
+install -d -m 755 %{buildroot}%{_libdir}/mldonkey
+install -m 755  mlnet %{buildroot}%{_bindir}/mlnet
+install -m 755  distrib/mldonkey_command %{buildroot}%{_bindir}/mldonkey_command
+install -m 755  distrib/kill_mldonkey %{buildroot}%{_bindir}/kill_mldonkey
+
+# gui
+install -m 755  mlgui %{buildroot}%{_bindir}/mlgui
+install -m 755  mlnet+gui %{buildroot}%{_bindir}/mlnet+gui
+install -m 755  mlguistarter %{buildroot}%{_bindir}/mlguistarter
+install -m 755  distrib/mldonkey_previewer %{buildroot}%{_bindir}/mldonkey_previewer
+
+# init 
+install -d -m 755 %{buildroot}%{_initrddir}
+install -d -m 755 %{buildroot}/var/lib/mldonkey
+install -d -m 755 %{buildroot}/var/cache/mldonkey
+install -d -m 755 %{buildroot}/var/lib/mldonkey/incoming
+install -d -m 755 %{buildroot}%{_sysconfdir}/sysconfig
+install -m 755 distrib/mldonkey.init %{buildroot}%{_initrddir}/mldonkey
+install -m 644 distrib/mldonkey.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/mldonkey
+
+# ed2k_submit
+install -d -m 755 %{buildroot}%{_datadir}/services/
+install -m 755 distrib/ed2k_submit/mldonkey_submit %{buildroot}%{_bindir}/mldonkey_submit
+install -m 644 distrib/ed2k_submit/mldonkey %{buildroot}%{_sysconfdir}/sysconfig/mldonkey_submit
+install -m 644 distrib/ed2k_submit/ed2k.protocol  %{buildroot}%{_datadir}/services/ed2k.protocol
+
+%pre init
+%_pre_useradd mldonkey /var/lib/mldonkey /bin/bash
+
+%post init
+%_post_service mldonkey
+
+%post gui
+%update_menus
+
+%preun init
+%_preun_service mldonkey
+
+%postun init
+%_postun_userdel mldonkey
+
+%postun gui
+%clean_menus
+
+%files
+%defattr(-,root,root)
+%doc COPYING docs/* distrib/AUTHORS distrib/BUGS distrib/ChangeLog  distrib/directconnect.ini  distrib/ed2k_links.txt  distrib/FAQ.html  distrib/INSTALL  distrib/TODO
+%{_bindir}/mlnet
+%{_bindir}/mldonkey_command
+%{_bindir}/kill_mldonkey
+
+%files gui
+%defattr(-,root,root)
+%doc COPYING
+%{_bindir}/mlgui
+%{_bindir}/mlnet+gui
+%{_bindir}/mlguistarter
+%{_bindir}/mldonkey_previewer
+
+%files init
+%defattr(-,root,root)
+%doc COPYING
+%config(noreplace) %{_sysconfdir}/sysconfig/mldonkey
+%config(noreplace) %{_initrddir}/mldonkey
+%attr(700,mldonkey,mldonkey) %dir /var/lib/mldonkey/incoming
+%attr(700,mldonkey,mldonkey) %dir /var/cache/mldonkey
+%attr(700,mldonkey,mldonkey) %dir /var/lib/mldonkey
+
+%files ed2k_submit
+%defattr(-,root,root)
+%doc COPYING distrib/ed2k_submit/README.MLdonkeySubmit 
+%config(noreplace) %{_sysconfdir}/sysconfig/mldonkey_submit
+%{_bindir}/mldonkey_submit
+%{_datadir}/services/ed2k.protocol
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%changelog

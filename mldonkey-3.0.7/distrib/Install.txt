@@ -1,0 +1,121 @@
+Installation
+==================
+
+-If you want to get up and running quickly and easily-
+
+Compile mldonkey without GUI support
+You have to have zlib, zlib-dev and m4 packages installed.
+For gd-made statistics libgd2-dev should be installed.
+
+Mldonkey/> ./configure
+Mldonkey/> make
+
+There is no additional 'make install' command. Copy the file 'mlnet'
+(this is MLdonkey) to the folder where you've choosen to run MLdonkey.
+
+Start 'mlnet'
+
+Mlnet/> ./mlnet
+Leave the terminal window open. MLdonkey is now running.
+
+Open a browser and type in the URL http://localhost:4080 <enter>.
+A web-based interface to MLdonkey appears. Certain ports enabling inbound
+routing on your firewall/router need to be opened to fully use MLdonkey.
+The Options tab in the web interface shows the ports.
+
+Downloaded files will be found in the sub-directory incoming/, while
+files to be shared should be in a sub-directory called shared/.
+
+-You're done!-
+
+Some goodies (make_torrent, ed2k_hash) come with mldonkey, you can also
+compile them using the additionnal command:
+
+Mldonkey/> make utils
+
+==================
+There are additional ways besides the web interface to control Mlnet(MLdonkey).
+- Compiling support for the 'mlgui' application while compiling MLdonkey
+  is one. This requires additional libraries, which, depending on your platform
+  and skill, may be easy or not so easy to add. The 'mlnet' application functions
+  fine without the GUI.
+- Other applications are written by third-parties and available for specific
+  platforms. These vary in stability and functionality.
+  One example is Sancho: http://sancho-gui.sourceforge.net/
+
+Compiling mldonkey with mldonkey_gui support:
+-------------------
+
+You have now two options to compile mldonkey:
+- Individually install Objective-Caml 3.08.4, LablGTK 1.2.7 and/or LablGTK-2.4.0.
+  Then, you can compile mldonkey. The instructions are given below at '1)'.
+- If you want to install ocaml and lablgtk only to compile mldonkey. You must
+  have a good internet access (you want mldonkey after all :). You must have
+  "wget" installed. Then, run:
+
+./configure --enable-batch
+
+The configure script will download ocaml and lablgtk, compile and install them
+locally so that they can be used to compile mldonkey. Steps below can be skipped
+now. Be patient. Ocaml and lablgtk tools take a while to compile and install.
+
+Note: At least 70 M of free disk space is required on the partition where mldonkey
+is compiled.
+
+------------------------------------------------------------------------
+1) Installing required tools: Objective-Caml 3.10.2 and LablGTK
+
+ 1.1) Objective-Caml 3.10.2 (from http://caml.inria.fr/pub/distrib/ocaml-3.10)
+
+    ~/tmp> wget http://caml.inria.fr/distrib/ocaml-3.10/ocaml-3.10.2.tar.gz
+    ~/tmp> tar zxf ocaml-3.10.2.tar.gz
+    ~/tmp> cd ocaml-3.10.2
+
+    ~/tmp/ocaml-3.10.2> ./configure
+    ~/tmp/ocaml-3.10.2> make world.opt
+    ~/tmp/ocaml-3.10.2> make install
+
+ 1.2.1) LablGTK 1.2.7 for GTK1
+      (from http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/lablgtk.html)
+
+    ~/tmp> wget http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/dist/lablgtk-1.2.7.tar.gz
+    ~/tmp> tar zxf lablgtk-1.2.7.tar.gz
+    ~/tmp> cd lablgtk-1.2.7
+    ~/tmp/lablgtk-1.2.7> make configure
+    ~/tmp/lablgtk-1.2.7> make
+    ~/tmp/lablgtk-1.2.7> make opt
+    ~/tmp/lablgtk-1.2.7> make install
+
+ 1.2.2) LablGTK-2.10.1 for GTK2
+      (from http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/lablgtk.html)
+
+    ~/tmp> wget http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/dist/lablgtk-2.10.1.tar.gz
+    ~/tmp> tar zxf lablgtk-2.10.1.tar.gz
+    ~/tmp> cd lablgtk-2.10.1
+    ~/tmp/lablgtk-2.10.1> ./configure
+    ~/tmp/lablgtk-2.10.1> make world
+    ~/tmp/lablgtk-2.10.1> make install
+
+2) Compiling mldonkey with GUI:
+
+    To build GTK1 newgui: ./configure --enable-gui=newgui1
+    To build GTK1 oldgui: ./configure --enable-gui=oldgui
+      - note: oldgui does not compile with Ocaml >= 3.10
+    To build GTK2 GUI:    ./configure --enable-gui[=newgui2]
+    lablgtk-1.2.7 and lablgtk-2.10.1 can both be installed at the same time.
+
+    ~/tmp/mldonkey> make
+
+  You should now have 'mlnet' (the daemon with all network support)
+  and 'mlgui' (the interface) No 'make install' is provided. 
+
+  You can disable all other p2p networks using the --disable-multinet option
+   with ./configure. Only edonkey support (including Overnet/Kademlia)
+   will then be compiled.
+
+------------------------------------------------------------------------
+
+NOTES:
+------
+To compile on MinGW read this guide:
+http://mldonkey.sourceforge.net/Windows

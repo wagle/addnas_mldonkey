@@ -1,0 +1,152 @@
+/* config.h.in.  Generated from configure.in by autoheader.  */
+
+/* Define to 1 if you want to replace iconv and related with stubs. */
+#undef DISABLE_ICONV
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#undef HAVE_ARPA_INET_H
+
+/* Define to 1 if you have the <byteswap.h> header file. */
+#undef HAVE_BYTESWAP_H
+
+/* Define if you have the iconv() function. */
+#undef HAVE_ICONV
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `charset' library (-lcharset). */
+#undef HAVE_LIBCHARSET
+
+/* Define to 1 if you have the <libcharset.h> header file. */
+#undef HAVE_LIBCHARSET_H
+
+/* Define to 1 if you have the <langinfo.h> header file. */
+#undef HAVE_LANGINFO_H
+
+/* Define to 1 if you have the <linux/limits.h> header file. */
+#undef HAVE_LINUX_LIMITS_H
+
+/* Define to 1 if you have the `locale_charset' function. */
+#undef HAVE_LOCALE_CHARSET
+
+/* Define to 1 if you have the <locale.h> header file. */
+#undef HAVE_LOCALE_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <netinet/in.h> header file. */
+#undef HAVE_NETINET_IN_H
+
+/* Define to 1 if you have the <netinet/in_systm.h> header file. */
+#undef HAVE_NETINET_IN_SYSTM_H
+
+/* Define to 1 if you have the <netinet/ip.h> header file. */
+#undef HAVE_NETINET_IP_H
+
+/* Define to 1 if you have the `poll' function. */
+#undef HAVE_POLL
+
+/* Define if you have POSIX threads libraries and header files. */
+#undef HAVE_PTHREAD
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/poll.h> header file. */
+#undef HAVE_SYS_POLL_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#undef HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the <zlib.h> header file. */
+#undef HAVE_ZLIB_H
+
+/* Define to 1 if you have the `zlibVersion' function. */
+#undef HAVE_ZLIBVERSION
+
+/* Define as const if the declaration of iconv() needs const. */
+#undef ICONV_CONST
+
+/* Define to the necessary symbol if this constant uses a non-standard name on
+   your system. */
+#undef PTHREAD_CREATE_JOINABLE
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
+/* Define to 1 if you have png support in libgd. */
+#undef HAVE_GD_PNG
+
+/* Define to 1 if you have the `png_access_version_number' function. */
+#undef HAVE_PNGVERSION
+
+/* Define to 1 if you have jpg support in libgd. */
+#undef HAVE_GD_JPG
+
+/* Define to 1 if you have bzip2 support. */
+#undef USE_BZIP2
+
+/* Define to 1 if you have the `bzlibVersion' function. */
+#undef HAVE_BZLIBVERSION
+
+/* Define to 1 if you have the <sys/vfs.h> header file. */
+#undef HAVE_SYS_VFS_H
+
+/* Define to 1 if you have the <sys/statvfs.h> header file. */
+#undef HAVE_SYS_STATVFS_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* Define to 1 if you have the <sys/mount.h> header file. */
+#undef HAVE_SYS_MOUNT_H
+
+/* Define to 1 if you have the <gnu/libc-versions.h> header file. */
+#undef HAVE_GNU_LIBC_VERSION_H
+
+/* Define to 1 if you want to use CryptoPP */
+#undef HAVE_CRYPTOPP
+
+/* Define to 1 if you have <sys/time.h> */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have <sys/resource.h> */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define to 1 if you have getrlimit() */
+#undef HAVE_GETRLIMIT
+
+/* Define to 1 if you have setrlimit() */
+#undef HAVE_SETRLIMIT
+
+/* Define to 1 if you have strerror() */
+#undef HAVE_STRERROR
+
+/* Define to 1 if you have strerror_r() */
+#undef HAVE_STRERROR_R
+
+/* Define to 1 if you want to use libminiupnpc + libnatpmp */
+#undef ENABLE_UPNP_NATPMP

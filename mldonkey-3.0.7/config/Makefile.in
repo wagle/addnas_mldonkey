@@ -1,0 +1,1890 @@
+changequote([[, ]])
+# 
+#
+#
+#   Do not edit Makefile, edit config/Makefile.in instead
+#
+#
+#
+#
+#
+
+
+
+include config/Makefile.config
+
+ifneq ("$(GLIBC_VERSION)" , "")
+  GLIBC_VERSION_ARCH = "_glibc-"$(GLIBC_VERSION)
+endif
+
+##################################################################
+
+##             Bytecode or Native ?
+
+##################################################################
+
+NO_LIBS_byte=
+NO_LIBS_opt=
+NO_STATIC_LIBS_opt=
+NO_CMXA=
+
+LIBS_byte=-custom bigarray.cma unix.cma str.cma
+LIBS_opt= bigarray.cmxa unix.cmxa str.cmxa
+
+BIGARRAY_LIBS_opt=bigarray.cmxa
+BIGARRAY_LIBS_byte=bigarray.cma
+
+CRYPT_LIBS_opt=-cclib -lcrypt
+CRYPT_LIBS_byte=-cclib -lcrypt
+
+
+#######################################################################
+
+##              General options
+
+#######################################################################
+
+ifeq ("$(GUI)", "newgui2")
+  ICONS_CHOICE=icons/rsvg
+  SRC_GUI=src/gtk2/gui
+  GUI_CODE=GTK2GUI
+  GTK=gtk2
+else
+  CONFIGWIN=src/gtk/configwin
+  GPATTERN=src/gtk/gpattern
+  OKEY=src/gtk/okey
+  GTK=gtk
+  ifeq ("$(GUI)", "newgui1")
+    SRC_PROGRESS=src/gtk/progress
+    ICONS_CHOICE=icons/tux
+    GUI_CODE=NEWGUI
+    SRC_GUI=src/gtk/newgui
+  else
+    SRC_GUI=src/gtk/gui
+    ICONS_CHOICE=icons/kde
+    GUI_CODE=OLDGUI
+  endif
+endif
+
+
+EXTLIB=src/utils/extlib
+CDK=src/utils/cdk
+BITSTRING=src/utils/bitstring
+LIB=src/utils/lib
+NET=src/utils/net
+RSS=src/utils/ocamlrss
+XML=src/utils/xml-light
+
+COMMON=src/daemon/common
+DRIVER=src/daemon/driver
+MP3=src/utils/mp3tagui
+
+SRC_DONKEY=src/networks/donkey
+SRC_BITTORRENT=src/networks/bittorrent
+SRC_OPENNAP=src/networks/opennap
+SRC_GNUTELLA=src/networks/gnutella
+SRC_GNUTELLA2=src/networks/gnutella2
+SRC_OPENFT=src/networks/openFT
+SRC_FASTTRACK=src/networks/fasttrack
+SRC_SOULSEEK=src/networks/soulseek
+SRC_DIRECTCONNECT=src/networks/direct_connect
+SRC_FILETP=src/networks/fileTP
+
+SUBDIRS=$(EXTLIB) $(CDK) $(BITSTRING) $(LIB) $(RSS) $(XML) $(NET) tools \
+   $(COMMON) $(DRIVER) $(MP3) src/config/$(OS_FILES)
+
+INCLUDES += $(foreach file, $(SUBDIRS), -I $(file)) -I +camlp4
+
+CFLAGS:=$(CFLAGS) $(CONFIG_INCLUDES) $(GTKCFLAGS) $(GD_CFLAGS)
+
+TARGETS= mlnet$(EXE) 
+
+ifeq ("$(OS_FILES2)", "mingw")
+
+RESFILE= resfile.o
+
+endif
+
+ifeq ("$(OS_FILES2)", "cygwin")
+
+RESFILE= resfile.o
+
+endif
+
+ifeq ("$(DEVEL)", "yes")
+
+TARGETS += mldonkey_installer$(EXE)
+
+endif
+
+
+#######################################################################
+
+##              Objects files for "mldonkey"
+
+#######################################################################
+
+LIBS_flags += -ccopt "$(LDFLAGS) $(CPPFLAGS)" -cclib "$(LIBS)"
+
+ifeq ("$(OS_FILES2)", "mingw")
+  LIBS_flags += -cclib "-lws2_32 -lgdi32 -luser32 -ladvapi32 -lwsock32 -limm32 -lshell32 -lole32 resfile.o"
+endif
+
+ifeq ("$(OS_FILES2)", "cygwin")
+  LIBS_flags += -cclib "resfile.o"
+endif
+
+BITSTRING_SRCS = \
+  $(BITSTRING)/bitstring.ml \
+  $(BITSTRING)/bitstring_c.c
+
+ifeq ("$(BZIP2)", "yes")
+  LIBS_flags += -cclib -lbz2
+  CDK_SRCS +=  $(CDK)/bzlib.ml $(CDK)/bzip2.ml
+endif
+
+CDK_SRCS +=  $(CDK)/zlib.ml $(CDK)/zip.ml $(CDK)/gzip.ml $(CDK)/zlibstubs.c $(CDK)/tar.mlcpp
+
+CDK_SRCS += $(LIB)/autoconf.ml
+
+
+CDK_SRCS+= $(LIB)/fifo.ml $(CDK)/arg2.ml $(LIB)/syslog.ml $(CDK)/printf2.ml \
+  $(CDK)/heap.ml \
+  $(CDK)/printexc2.ml $(CDK)/genlex2.ml \
+  $(CDK)/filepath.ml $(CDK)/string2.ml \
+  $(CDK)/filename2.ml $(CDK)/list2.ml $(CDK)/hashtbl2.ml \
+  $(CDK)/unix2.ml $(CDK)/file.ml \
+  $(CDK)/heap_c.c $(CDK)/array2.ml
+
+EXTLIB_SRCS += $(EXTLIB)/IO.ml
+
+ifneq ("$(PTHREAD_CFLAGS)" , "")
+  CFLAGS += $(PTHREAD_CFLAGS)
+  LIBS_flags += -ccopt "$(PTHREAD_CFLAGS)"
+#  LIBS_byte += -ccopt "$(PTHREAD_CFLAGS)"
+endif
+
+ifneq ("$(PTHREAD_MINGW_CFLAGS)" , "")
+  CFLAGS += $(PTHREAD_MINGW_CFLAGS)
+endif
+
+ifneq ("$(PTHREAD_LIBS)" , "")
+  LIBS_flags += -cclib "$(PTHREAD_LIBS)"
+#  LIBS_byte += -cclib "$(PTHREAD_LIBS)"
+endif
+
+MP3TAG_SRCS=     $(MP3)/mp3_info.ml  $(MP3)/mp3_genres.ml \
+  $(MP3)/mp3_misc.ml\
+  $(MP3)/mp3_tag.ml $(MP3)/mp3tag.ml
+
+
+LIB_SRCS=   \
+  src/config/$(OS_FILES)/mlUnix.ml \
+  src/config/$(OS_FILES)/os_stubs_c.c \
+	$(LIB)/bitv.ml \
+  $(LIB)/intmap.ml $(LIB)/stringMap.ml \
+  $(LIB)/int64ops.ml $(LIB)/options.ml4 \
+  $(LIB)/levenshtein.ml \
+  $(LIB)/intset.ml \
+  $(LIB)/store.ml \
+  $(LIB)/indexer.ml $(LIB)/indexer1.ml $(LIB)/indexer2.ml \
+  $(LIB)/misc2.mlcpp $(LIB)/misc.ml $(LIB)/unix32.ml  $(LIB)/md4.ml \
+  $(LIB)/http_lexer.mll $(LIB)/url.ml \
+  $(RSS)/rss_date.ml \
+  $(LIB)/date.ml  $(LIB)/fst_hash.c \
+  $(LIB)/md4_comp.c $(LIB)/md4_c.c \
+  $(LIB)/charsetstubs.c $(LIB)/charset.ml \
+  $(LIB)/gettext.ml4 $(LIB)/md5_c.c $(LIB)/sha1_c.c \
+  $(LIB)/tiger.c \
+  $(LIB)/stubs_c.c  $(LIB)/set2.ml $(LIB)/queues.ml \
+  $(LIB)/verificationBitmap.ml
+
+ifeq ("$(MAGIC)", "yes")
+  MAGIC_LIBS_flags += -cclib -lmagic
+  MAGIC_SRCS = $(LIB)/magiclib.ml $(LIB)/magic_magic.ml $(LIB)/magiclib_stub.c
+else
+  MAGIC_SRCS = $(LIB)/magic_nomagic.ml
+endif
+MAGIC_SRCS += $(LIB)/magic.ml
+
+NET_SRCS = \
+  $(NET)/basicSocket.ml \
+  $(NET)/ip.ml $(NET)/ip_set.ml $(NET)/geoip.ml $(NET)/base64.ml $(NET)/mailer.ml \
+  $(NET)/anyEndian.ml $(NET)/bigEndian.ml $(NET)/littleEndian.ml \
+  $(NET)/tcpBufferedSocket.ml \
+  $(NET)/tcpServerSocket.ml \
+  $(NET)/udpSocket.ml $(NET)/http_server.ml $(NET)/http_client.ml \
+  $(NET)/cobs.ml \
+  $(NET)/terminal.ml
+
+XML_SRCS= \
+  $(XML)/xml_types.ml $(XML)/xml_parser.mly $(XML)/xml_lexer.mll \
+  $(XML)/xml_dtd.ml $(XML)/xmlParser.ml $(XML)/xml.ml
+
+RSS_SRCS= \
+  $(RSS)/rss_messages.ml $(RSS)/rss_types.ml  $(RSS)/rss_io.ml  $(RSS)/rss.ml
+
+COMMON_SRCS = \
+  $(XML_SRCS) $(RSS_SRCS) \
+  $(COMMON)/commonTypes.ml \
+  $(COMMON)/guiTypes.ml \
+  $(COMMON)/guiProto.ml \
+  $(COMMON)/commonEvent.ml \
+  $(COMMON)/commonOptions.ml \
+  $(COMMON)/commonPictures.ml \
+  $(COMMON)/commonUserDb.ml \
+  $(COMMON)/commonMessages.ml \
+  $(COMMON)/commonGlobals.ml \
+  $(COMMON)/commonBitzi.ml \
+  $(COMMON)/guiDecoding.ml \
+  $(COMMON)/guiEncoding.ml \
+  $(COMMON)/giftLexer.mll \
+  $(COMMON)/giftParser.mly \
+  $(COMMON)/giftEncoding.ml \
+  $(COMMON)/giftDecoding.ml \
+  $(COMMON)/commonHasher.ml \
+  $(COMMON)/commonHosts.ml \
+  $(COMMON)/commonIndexing.ml \
+  $(COMMON)/commonHasher_c.c
+
+COMMON_CLIENT_SRCS= \
+  $(NET)/upnpClient.ml \
+  $(NET)/upnp_stubs.c \
+  $(COMMON)/commonUser.ml \
+  $(COMMON)/commonNetwork.ml \
+  $(COMMON)/commonServer.ml \
+  $(COMMON)/commonClient.ml \
+  $(COMMON)/commonFile.ml \
+  $(COMMON)/commonResult.ml \
+  $(COMMON)/commonWeb.ml \
+  $(COMMON)/commonBlocking.ml  \
+  $(COMMON)/commonComplexOptions.ml \
+  $(COMMON)/commonShared.ml \
+  $(COMMON)/commonRoom.ml \
+  $(COMMON)/commonSearch.ml \
+  $(COMMON)/commonMultimedia.ml \
+  $(COMMON)/commonSwarming.ml \
+  $(COMMON)/commonInteractive.ml \
+  $(COMMON)/commonChunks.ml \
+  $(COMMON)/commonDownloads.ml \
+  $(COMMON)/commonUploads.ml \
+  $(COMMON)/commonSources.ml \
+  $(COMMON)/commonStats.ml
+
+all: Makefile config/Makefile.config $(TARGET_TYPE)
+
+config/configure: config/configure.in
+	cd config; autoconf
+
+ifeq ("$(CONFIGURE_RUN)" , "yes")
+
+config/Makefile.config: config/configure config/Makefile.config.in $(LIB)/autoconf.ml.new.in packages/rpm/Makefile.in
+	./configure $(CONFIGURE_ARGUMENTS)
+
+else
+
+config/Makefile.config: Makefile config/configure config/Makefile.config.in
+	@echo '******************************************'
+	@echo 
+	@echo 
+	@echo ' You should rerun ./configure now         '
+	@echo 
+	@echo 
+	@echo '******************************************'
+endif
+
+Makefile: config/Makefile.in
+	(cd config; m4 Makefile.in > ../Makefile)
+
+#######################################################################
+
+#              PLUGINS
+
+#######################################################################
+
+MAIN_SRCS=$(COMMON)/commonMain.ml
+
+ifeq ("$(DONKEY_SUI)", "yes")
+  CRYPTOPP_LIBS_flags += -cc '$(CXX) $(CXXFLAGS)' -ccopt '$(CRYPTOPPFLAGS)'
+  DONKEY_SRCS += $(LIB)/CryptoPP.cc $(LIB)/CryptoPP_stubs.c $(SRC_DONKEY)/donkeySui1.ml $(SRC_DONKEY)/donkeySui.ml
+else
+  DONKEY_SRCS += $(SRC_DONKEY)/donkeySui2.ml $(SRC_DONKEY)/donkeySui.ml
+endif
+
+DONKEY_SRCS += \
+  \
+  $(SRC_DONKEY)/donkeyTypes.ml \
+  $(SRC_DONKEY)/donkeyOptions.ml \
+  $(SRC_DONKEY)/donkeyMftp.ml \
+  $(SRC_DONKEY)/donkeyImport.ml \
+  $(SRC_DONKEY)/donkeyOpenProtocol.ml \
+  $(SRC_DONKEY)/donkeyProtoClient.ml \
+  $(SRC_DONKEY)/donkeyProtoServer.ml  \
+  $(SRC_DONKEY)/donkeyProtoUdp.ml  \
+  $(SRC_DONKEY)/donkeyPandora.ml  \
+  \
+  $(SRC_DONKEY)/donkeyGlobals.ml \
+  $(SRC_DONKEY)/donkeyProtoCom.ml  \
+  \
+  $(SRC_DONKEY)/donkeyComplexOptions.ml \
+  $(SRC_DONKEY)/donkeySupernode.ml \
+  $(SRC_DONKEY)/donkeyShare.ml \
+  $(SRC_DONKEY)/donkeyReliability.ml \
+  $(SRC_DONKEY)/donkeyThieves.ml \
+  $(SRC_DONKEY)/donkeyStats.ml \
+  $(SRC_DONKEY)/donkeyOneFile.ml \
+  \
+  $(SRC_DONKEY)/donkeyOvernetImport.ml \
+  $(SRC_DONKEY)/donkeyNodesDat.ml \
+  $(SRC_DONKEY)/donkeyOvernet.ml \
+  $(SRC_DONKEY)/donkeyProtoKademlia.ml \
+  $(SRC_DONKEY)/donkeyClient.ml \
+  $(SRC_DONKEY)/donkeyProtoOvernet.ml \
+  $(SRC_DONKEY)/donkeyUdp.ml \
+  $(SRC_DONKEY)/donkeyFiles.ml  \
+  $(SRC_DONKEY)/donkeyServers.ml \
+  $(SRC_DONKEY)/donkeySearch.ml \
+  $(SRC_DONKEY)/donkeyInteractive.ml \
+  $(SRC_DONKEY)/donkeyMain.ml
+
+
+OPENNAP_SRCS= \
+ $(SRC_OPENNAP)/napigator.mll \
+ $(SRC_OPENNAP)/winmx_xor_c.c \
+ $(SRC_OPENNAP)/opennapTypes.ml \
+ $(SRC_OPENNAP)/opennapProtocol.ml \
+ $(SRC_OPENNAP)/opennapOptions.ml \
+ $(SRC_OPENNAP)/opennapGlobals.ml \
+ $(SRC_OPENNAP)/opennapComplexOptions.ml \
+ $(SRC_OPENNAP)/opennapClients.ml \
+ $(SRC_OPENNAP)/opennapServers.ml \
+ $(SRC_OPENNAP)/opennapInteractive.ml \
+ $(SRC_OPENNAP)/opennapMain.ml 
+
+GNUTELLA_SRCS= \
+  $(SRC_GNUTELLA)/gnutellaNetwork.ml \
+  $(SRC_GNUTELLA)/gnutellaTypes.ml \
+  $(SRC_GNUTELLA)/gnutellaOptions.ml \
+  $(SRC_GNUTELLA)/gnutellaGlobals.ml \
+  $(SRC_GNUTELLA)/gnutellaComplexOptions.ml \
+  $(SRC_GNUTELLA)/gnutellaFunctions.ml \
+  $(SRC_GNUTELLA)/gnutellaProtocol.ml \
+  $(SRC_GNUTELLA)/gnutellaProto.ml \
+  $(SRC_GNUTELLA)/gnutellaClients.ml \
+  $(SRC_GNUTELLA)/gnutellaPandora.ml \
+  $(SRC_GNUTELLA)/gnutellaHandler.ml \
+  $(SRC_GNUTELLA)/gnutellaRedirector.ml \
+  $(SRC_GNUTELLA)/gnutellaServers.ml \
+  $(SRC_GNUTELLA)/gnutellaSupernode.ml \
+  $(SRC_GNUTELLA)/gnutellaInteractive.ml \
+  $(SRC_GNUTELLA)/gnutellaMain.ml
+
+# The only files specific to Gnutella2 are:
+#  $(SRC_GNUTELLA2)/g2Network.ml
+#  $(SRC_GNUTELLA2)/g2Proto.ml 
+#  $(SRC_GNUTELLA2)/g2Handler.ml 
+#  $(SRC_GNUTELLA2)/g2Redirector.ml 
+
+GNUTELLA2_SRCS= \
+  $(SRC_GNUTELLA2)/g2Network.ml \
+  $(SRC_GNUTELLA2)/g2Types.mlt \
+  $(SRC_GNUTELLA2)/g2Options.mlt \
+  $(SRC_GNUTELLA2)/g2Globals.mlt \
+  $(SRC_GNUTELLA2)/g2ComplexOptions.mlt \
+  $(SRC_GNUTELLA2)/g2Functions.mlt \
+  $(SRC_GNUTELLA2)/g2Protocol.mlt \
+  $(SRC_GNUTELLA2)/g2Proto.ml \
+  $(SRC_GNUTELLA2)/g2Clients.mlt \
+  $(SRC_GNUTELLA2)/g2Pandora.ml \
+  $(SRC_GNUTELLA2)/g2Handler.ml \
+  $(SRC_GNUTELLA2)/g2Redirector.ml \
+  $(SRC_GNUTELLA2)/g2Servers.mlt \
+  $(SRC_GNUTELLA2)/g2Supernode.ml \
+  $(SRC_GNUTELLA2)/g2Interactive.mlt \
+  $(SRC_GNUTELLA2)/g2Main.mlt
+
+
+# The only files specific to Fasttrack are:
+#  $(SRC_FASTTRACK)/fasttrackNetwork.ml 
+#  $(SRC_FASTTRACK)/fasttrackGlobals.ml 
+#  $(SRC_FASTTRACK)/fasttrackProtocol.ml 
+#  $(SRC_FASTTRACK)/fasttrackProto.ml 
+#  $(SRC_FASTTRACK)/fasttrackHandler.ml 
+#  $(SRC_FASTTRACK)/fasttrackServers.ml 
+#  $(SRC_FASTTRACK)/fasttrackPandora.ml 
+
+
+FASTTRACK_SRCS= \
+  $(SRC_FASTTRACK)/enc_type_1.c \
+  $(SRC_FASTTRACK)/enc_type_2.c \
+  $(SRC_FASTTRACK)/enc_type_20.c \
+  $(SRC_FASTTRACK)/enc_type_80.c \
+  $(SRC_FASTTRACK)/fst_crypt.c \
+  $(SRC_FASTTRACK)/fst_crypt_ml.c \
+  $(SRC_FASTTRACK)/fasttrackNetwork.ml \
+  $(SRC_FASTTRACK)/fasttrackTypes.mlt \
+  $(SRC_FASTTRACK)/fasttrackOptions.mlt \
+  $(SRC_FASTTRACK)/fasttrackGlobals.ml \
+  $(SRC_FASTTRACK)/fasttrackComplexOptions.mlt \
+  $(SRC_FASTTRACK)/fasttrackFunctions.mlt \
+  $(SRC_FASTTRACK)/fasttrackProtocol.ml \
+  $(SRC_FASTTRACK)/fasttrackProto.ml \
+  $(SRC_FASTTRACK)/fasttrackClients.mlt \
+  $(SRC_FASTTRACK)/fasttrackHandler.ml \
+  $(SRC_FASTTRACK)/fasttrackServers.ml \
+  $(SRC_FASTTRACK)/fasttrackPandora.ml \
+  $(SRC_FASTTRACK)/fasttrackInteractive.mlt \
+  $(SRC_FASTTRACK)/fasttrackMain.mlt
+
+$(BITSTRING)/bitstring_persistent.cmo: $(BITSTRING)/bitstring_persistent.ml $(BITSTRING)/bitstring_persistent.cmi build/bitstring.cma
+	$(OCAMLC) -I $(BITSTRING) -I +camlp4 camlp4lib.cma -c $<
+
+$(BITSTRING)/pa_bitstring.cmo: $(BITSTRING)/pa_bitstring.mlt $(BITSTRING)/bitstring_persistent.cmo build/bitstring.cma
+	$(OCAMLC) -I $(BITSTRING) -I +camlp4 camlp4lib.cma -pp '$(CAMLP4OF) -impl' -c $^
+
+BITTORRENT_SRCS= \
+  $(SRC_BITTORRENT)/bencode.ml \
+  $(SRC_BITTORRENT)/bTRate.ml \
+  $(SRC_BITTORRENT)/bTTypes.ml \
+  $(SRC_BITTORRENT)/bTOptions.ml \
+  $(SRC_BITTORRENT)/bTUdpTracker.ml \
+  $(SRC_BITTORRENT)/bTProtocol.ml \
+  $(SRC_BITTORRENT)/bTTorrent.ml \
+  $(SRC_BITTORRENT)/bTGlobals.ml \
+  $(SRC_BITTORRENT)/bTComplexOptions.ml \
+  $(SRC_BITTORRENT)/bTStats.ml \
+  $(SRC_BITTORRENT)/bTTracker.ml \
+  $(SRC_BITTORRENT)/bTChooser.ml \
+  $(SRC_BITTORRENT)/bTClients.ml \
+  $(SRC_BITTORRENT)/bTInteractive.ml \
+  $(SRC_BITTORRENT)/bTMain.ml
+  
+OPENFT_SRCS= \
+  $(SRC_OPENFT)/openFTTypes.ml \
+  $(SRC_OPENFT)/openFTOptions.ml \
+  $(SRC_OPENFT)/openFTGlobals.ml \
+  $(SRC_OPENFT)/openFTComplexOptions.ml \
+  $(SRC_OPENFT)/openFTProtocol.ml \
+  $(SRC_OPENFT)/openFTClients.ml \
+  $(SRC_OPENFT)/openFTServers.ml \
+  $(SRC_OPENFT)/openFTInteractive.ml \
+  $(SRC_OPENFT)/openFTMain.ml
+
+FILETP_SRCS= \
+  $(SRC_FILETP)/fileTPTypes.ml \
+  $(SRC_FILETP)/fileTPOptions.ml \
+  $(SRC_FILETP)/fileTPGlobals.ml \
+  $(SRC_FILETP)/fileTPComplexOptions.ml \
+  $(SRC_FILETP)/fileTPProtocol.ml \
+  $(SRC_FILETP)/fileTPClients.ml \
+  $(SRC_FILETP)/fileTPHTTP.ml \
+  $(SRC_FILETP)/fileTPFTP.ml \
+  $(SRC_FILETP)/fileTPSSH.ml \
+  $(SRC_FILETP)/fileTPInteractive.ml \
+  $(SRC_FILETP)/fileTPMain.ml
+
+SOULSEEK_SRCS= \
+  $(SRC_SOULSEEK)/slskTypes.ml \
+  $(SRC_SOULSEEK)/slskOptions.ml \
+  $(SRC_SOULSEEK)/slskGlobals.ml \
+  $(SRC_SOULSEEK)/slskComplexOptions.ml \
+  $(SRC_SOULSEEK)/slskProtocol.ml \
+  $(SRC_SOULSEEK)/slskClients.ml \
+  $(SRC_SOULSEEK)/slskServers.ml \
+  $(SRC_SOULSEEK)/slskInteractive.ml \
+  $(SRC_SOULSEEK)/slskMain.ml
+
+DIRECT_CONNECT_SRCS= \
+  $(SRC_DIRECTCONNECT)/dcTypes.ml \
+  $(SRC_DIRECTCONNECT)/dcOptions.ml \
+  $(SRC_DIRECTCONNECT)/che3_c.c \
+  $(SRC_DIRECTCONNECT)/che3.ml \
+  $(SRC_DIRECTCONNECT)/dcGlobals.ml \
+  $(SRC_DIRECTCONNECT)/dcComplexOptions.ml \
+  $(SRC_DIRECTCONNECT)/dcProtocol.ml \
+  $(SRC_DIRECTCONNECT)/dcShared.ml \
+  $(SRC_DIRECTCONNECT)/dcKey.ml \
+  $(SRC_DIRECTCONNECT)/dcClients.ml \
+  $(SRC_DIRECTCONNECT)/dcServers.ml \
+  $(SRC_DIRECTCONNECT)/dcInteractive.ml \
+  $(SRC_DIRECTCONNECT)/dcMain.ml
+
+
+OBSERVER_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) $(NET_SRCS) $(MP3TAG_SRCS) \
+  $(COMMON_SRCS) $(COMMON_CLIENT_SRCS) $(DONKEY_SRCS) \
+  tools/observer.ml
+
+MLD_HASH_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) $(NET_SRCS) $(MP3TAG_SRCS) \
+  tools/mld_hash.ml
+
+OCAMLPP_SRCS = \
+  tools/ocamlpp.ml4
+
+COPYSOURCES_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) tools/copysources.ml
+
+SUBCONV_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) tools/subconv.ml
+
+MLSPLIT_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) tools/mlsplit.ml
+
+MAKE_TORRENT_SRCS = \
+  $(MAGIC_SRCS) $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) $(NET_SRCS) $(MP3TAG_SRCS) \
+  $(COMMON_SRCS) $(COMMON_CLIENT_SRCS) $(BITSTRING_SRCS) $(BITTORRENT_SRCS) \
+  tools/make_torrent.ml
+
+GET_RANGE_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) $(NET_SRCS) $(MP3TAG_SRCS) \
+  tools/get_range.ml
+
+ifeq ("$(OPENFT)" , "yes")
+SUBDIRS += $(SRC_OPENFT)
+
+CORE_SRCS += $(OPENFT_SRCS)
+endif
+
+ifeq ("$(GD)", "yes")
+  GD_LIBS_flags=-cclib "-lgd $(GD_LIBS)" -ccopt "$(GD_LDFLAGS)"
+  ifneq ("$(GD_STATIC_LIBS)", "")
+    GD_STATIC_LIBS_opt=-cclib "-lgd $(GD_STATIC_LIBS)" -ccopt "$(GD_LDFLAGS)"
+  endif
+  DRIVER_SRCS= \
+    $(CDK)/gd.ml \
+    $(CDK)/gdstubs.c \
+    $(DRIVER)/driverGraphics_gd.ml
+else
+  DRIVER_SRCS= \
+    $(DRIVER)/driverGraphics_nogd.ml
+endif
+
+ifeq ("$(UPNP_NATPMP)", "yes")
+  UPNP_NATPMP_LIBS_flags=-cclib "$(UPNP_NATPMP_LIBS)" -ccopt "$(UPNP_NATPMP_LDFLAGS)"
+  UPNP_NATPMP_STATIC_LIBS_flags=-cclib "$(UPNP_NATPMP_STATIC_LIBS)" -ccopt "$(UPNP_NATPMP_LDFLAGS)"
+endif
+
+DRIVER_SRCS+= \
+  $(DRIVER)/driverGraphics.ml  \
+  $(DRIVER)/driverInteractive.ml  \
+  $(DRIVER)/driverCommands.ml  \
+  $(DRIVER)/driverControlers.ml  \
+  $(DRIVER)/driverInterface.ml \
+  $(DRIVER)/driverMain.ml 
+
+ICONS_CMXA=icons.cmxa
+
+CDK_CMXA=cdk.cmxa
+BITSTRING_CMXA=
+BITSTRING_CMA=
+MLNET_SRCS=
+ifeq ("$(DONKEY)", "yes")
+BITSTRING_CMXA=bitstring.cmxa
+BITSTRING_CMA=bitstring.cma
+endif
+ifeq ("$(BITTORRENT)", "yes")
+BITSTRING_CMXA=bitstring.cmxa
+BITSTRING_CMA=bitstring.cma
+endif
+MLNET_SRCS+= $(MAIN_SRCS)
+MLNET_CMXA=extlib.cmxa $(CDK_CMXA) $(BITSTRING_CMXA) magic.cmxa common.cmxa client.cmxa core.cmxa driver.cmxa
+
+TESTS_CMXA=extlib.cmxa $(CDK_CMXA) $(BITSTRING_CMXA) magic.cmxa common.cmxa client.cmxa core.cmxa
+TESTS_SRCS=tools/tests.ml
+
+ifeq ("$(GUI)", "newgui2")
+mlnet+gui_CMXA= \
+  $(BITSTRING_CMXA) magic.cmxa extlib.cmxa cdk.cmxa common.cmxa client.cmxa core.cmxa driver.cmxa \
+  icons.cmxa guibase.cmxa gui.cmxa
+else
+mlnet+gui_CMXA= \
+  $(BITSTRING_CMXA) magic.cmxa extlib.cmxa cdk.cmxa common.cmxa client.cmxa core.cmxa driver.cmxa \
+  gmisc.cmxa icons.cmxa guibase.cmxa gui.cmxa
+endif
+
+mlnet+gui_SRCS=$(MAIN_SRCS)
+
+
+#######################################################################
+
+#              Sources for other development tools
+
+#######################################################################
+
+
+TESTRSS_SRCS= $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) tools/testrss.ml
+
+
+#######################################################################
+
+#              Objects files for "mlgui"
+
+#######################################################################
+
+uninstall::
+	rm -f $(BINDIR)/mlnet
+	rm -f $(BINDIR)/mlgui
+
+install:: opt 
+	mkdir -p $(DESTDIR)$(prefix)/bin
+	if test -f mlnet; then \
+             rm -f $(DESTDIR)$(prefix)/bin/mlnet; cp -f mlnet $(DESTDIR)$(prefix)/bin/mlnet; \
+             for link in mlslsk mldonkey mlgnut mldc mlbt; do \
+               rm -f $(DESTDIR)$(prefix)/bin/$$link; ln -s mlnet $(DESTDIR)$(prefix)/bin/$$link; \
+             done; \
+         fi
+	if test -f mlgui; then \
+             rm -f $(DESTDIR)$(prefix)/bin/mlgui; cp -f mlgui $(DESTDIR)$(prefix)/bin/mlgui; \
+             rm -f $(DESTDIR)$(prefix)/bin/mldonkey_gui; ln -s mlgui $(DESTDIR)$(prefix)/bin/mldonkey_gui; \
+         fi
+	if test -f mlnet+gui; then \
+             rm -f $(DESTDIR)$(prefix)/bin/mlnet+gui; cp -f mlnet+gui $(DESTDIR)$(prefix)/bin/mlnet+gui; \
+             for link in mlslsk+gui mldonkey+gui mlgnut+gui mldc+gui mlbt+gui; do \
+               rm -f $(DESTDIR)$(prefix)/bin/$$link; ln -s mlnet+gui $(DESTDIR)$(prefix)/bin/$$link; \
+             done; \
+         fi
+
+
+ifneq ("$(GUI)" , "no")
+  ifeq ("$(GUI)", "newgui2")
+    SUBDIRS += $(SRC_GUI) $(SRC_GUI)/x11 $(SRC_GUI)/win32 $(ICONS_CHOICE) +lablgtk2
+    GTK_LIBS_byte=-ccopt "$(GTKLLIBS)" -cclib "$(GTKLFLAGS)" -I +lablgtk2 $(LABLGL_CMA) lablgtk.cma gtkInit.cmo lablrsvg.cma
+    GTK_LIBS_opt=-ccopt "$(GTKLLIBS)" -cclib "$(GTKLFLAGS)" -I +lablgtk2 $(LABLGL_CMXA) lablgtk.cmxa gtkInit.cmx lablrsvg.cmxa
+    GTK_STATIC_LIBS_opt=-ccopt "$(GTKLLIBS)" -cclib "$(GTKLFLAGS)" -I +lablgtk2 lablgtk.cmxa gtkInit.cmx lablrsvg.cmxa
+  else
+    SUBDIRS += $(SRC_GUI) $(CONFIGWIN) $(OKEY) $(GPATTERN) $(ICONS_CHOICE) +lablgtk $(SRC_PROGRESS)
+    GTK_LIBS_byte=-I +lablgtk $(LABLGL_CMA) lablgtk.cma
+    GTK_LIBS_opt=-I +lablgtk  $(LABLGL_CMXA) lablgtk.cmxa
+    GTK_STATIC_LIBS_opt=-I +lablgtk lablgtk.cmxa
+  endif
+
+SVG_CONVERTER_SRCS = \
+  $(EXTLIB_SRCS) $(CDK_SRCS) $(LIB_SRCS) tools/svg_converter.ml
+
+CURSES_LIBS_byte=-cclib -lncurses
+CURSES_LIBS_opt=-cclib -lncurses
+
+
+CONFIGWIN_SRCS= \
+  $(CONFIGWIN)/configwin_types.ml \
+  $(CONFIGWIN)/configwin_messages.ml \
+  $(CONFIGWIN)/configwin_ihm.ml \
+  $(CONFIGWIN)/configwin.ml
+
+MP3TAGUI_SRCS=  $(MP3)/mp3_messages.ml $(MP3)/mp3_ui.ml
+
+GPATTERN_SRCS=  $(LIB)/gAutoconf.ml $(GPATTERN)/gpattern.ml
+
+OKEY_SRCS= $(OKEY)/okey.ml
+
+GTK2GUI_ICONS= \
+  $(ICONS_CHOICE)/splash_screen.svg \
+  $(ICONS_CHOICE)/menu_networks.svg \
+  $(ICONS_CHOICE)/menu_servers.svg \
+  $(ICONS_CHOICE)/menu_downloads.svg \
+  $(ICONS_CHOICE)/menu_friends.svg \
+  $(ICONS_CHOICE)/menu_searches.svg \
+  $(ICONS_CHOICE)/menu_rooms.svg \
+  $(ICONS_CHOICE)/menu_uploads.svg \
+  $(ICONS_CHOICE)/menu_console.svg \
+  $(ICONS_CHOICE)/menu_graph.svg \
+  $(ICONS_CHOICE)/menu_settings.svg \
+  $(ICONS_CHOICE)/menu_quit.svg \
+  $(ICONS_CHOICE)/menu_help.svg \
+  $(ICONS_CHOICE)/menu_core.svg \
+  $(ICONS_CHOICE)/menu_core_reconnect.svg \
+  $(ICONS_CHOICE)/menu_core_connectto.svg \
+  $(ICONS_CHOICE)/menu_core_scanports.svg \
+  $(ICONS_CHOICE)/menu_core_disconnect.svg \
+  $(ICONS_CHOICE)/menu_core_kill.svg \
+  $(ICONS_CHOICE)/menu_search_album.svg \
+  $(ICONS_CHOICE)/menu_search_movie.svg \
+  $(ICONS_CHOICE)/menu_search_mp3.svg \
+  $(ICONS_CHOICE)/menu_search_complex.svg \
+  $(ICONS_CHOICE)/menu_search_freedb.svg \
+  $(ICONS_CHOICE)/menu_search_imdb.svg \
+  $(ICONS_CHOICE)/menu_interfaces.svg \
+  $(ICONS_CHOICE)/menu_tools.svg \
+  $(ICONS_CHOICE)/menu_others.svg \
+  $(ICONS_CHOICE)/net_bittorrent.svg \
+  $(ICONS_CHOICE)/net_dc.svg \
+  $(ICONS_CHOICE)/net_ed2k.svg \
+  $(ICONS_CHOICE)/net_fasttrack.svg \
+  $(ICONS_CHOICE)/net_filetp.svg \
+  $(ICONS_CHOICE)/net_gnutella1.svg \
+  $(ICONS_CHOICE)/net_gnutella2.svg \
+  $(ICONS_CHOICE)/net_napster.svg \
+  $(ICONS_CHOICE)/net_soulseek.svg \
+  $(ICONS_CHOICE)/net_multinet.svg \
+  $(ICONS_CHOICE)/net_globalshare.svg \
+  $(ICONS_CHOICE)/net_supernode.svg \
+  $(ICONS_CHOICE)/stock_shared_directory.svg \
+  $(ICONS_CHOICE)/stock_directory.svg \
+  $(ICONS_CHOICE)/stock_directory_open.svg \
+  $(ICONS_CHOICE)/stock_color.svg \
+  $(ICONS_CHOICE)/stock_font.svg \
+  $(ICONS_CHOICE)/stock_password.svg \
+  $(ICONS_CHOICE)/stock_download_directory.svg \
+  $(ICONS_CHOICE)/stock_pending_slots.svg \
+  $(ICONS_CHOICE)/stock_close.svg \
+  $(ICONS_CHOICE)/stock_close_overlay.svg \
+  $(ICONS_CHOICE)/stock_stop.svg \
+  $(ICONS_CHOICE)/stock_ok.svg \
+  $(ICONS_CHOICE)/stock_all_servers.svg \
+  $(ICONS_CHOICE)/stock_add_server.svg \
+  $(ICONS_CHOICE)/stock_subscribe_search.svg \
+  $(ICONS_CHOICE)/stock_submit_search.svg \
+  $(ICONS_CHOICE)/stock_extend_search.svg \
+  $(ICONS_CHOICE)/stock_info.svg \
+  $(ICONS_CHOICE)/stock_local_search.svg \
+  $(ICONS_CHOICE)/stock_warning.svg \
+  $(ICONS_CHOICE)/type_source_contact.svg \
+  $(ICONS_CHOICE)/type_source_friend.svg \
+  $(ICONS_CHOICE)/type_source_normal.svg \
+  $(ICONS_CHOICE)/state_server_conh.svg \
+  $(ICONS_CHOICE)/state_server_conl.svg \
+  $(ICONS_CHOICE)/state_server_init.svg \
+  $(ICONS_CHOICE)/state_server_notcon.svg \
+  $(ICONS_CHOICE)/state_server_unknown.svg \
+  $(ICONS_CHOICE)/state_source_fileslisted.svg \
+  $(ICONS_CHOICE)/state_down.svg \
+  $(ICONS_CHOICE)/state_up.svg \
+  $(ICONS_CHOICE)/state_updown.svg \
+  $(ICONS_CHOICE)/state_notupdown.svg \
+  $(ICONS_CHOICE)/mime_unknown.svg \
+  $(ICONS_CHOICE)/mime_images.svg \
+  $(ICONS_CHOICE)/mime_binary.svg \
+  $(ICONS_CHOICE)/mime_cdimage.svg \
+  $(ICONS_CHOICE)/mime_debian.svg \
+  $(ICONS_CHOICE)/mime_html.svg \
+  $(ICONS_CHOICE)/mime_java.svg \
+  $(ICONS_CHOICE)/mime_pdf.svg \
+  $(ICONS_CHOICE)/mime_postscript.svg \
+  $(ICONS_CHOICE)/mime_real.svg \
+  $(ICONS_CHOICE)/mime_recycled.svg \
+  $(ICONS_CHOICE)/mime_rpm.svg \
+  $(ICONS_CHOICE)/mime_shellscript.svg \
+  $(ICONS_CHOICE)/mime_soffice.svg \
+  $(ICONS_CHOICE)/mime_sound.svg \
+  $(ICONS_CHOICE)/mime_source.svg \
+  $(ICONS_CHOICE)/mime_spreadsheet.svg \
+  $(ICONS_CHOICE)/mime_tex.svg \
+  $(ICONS_CHOICE)/mime_text.svg \
+  $(ICONS_CHOICE)/mime_tgz.svg \
+  $(ICONS_CHOICE)/mime_video.svg \
+  $(ICONS_CHOICE)/mime_wordprocessing.svg \
+  $(ICONS_CHOICE)/emoticon_storm.svg \
+  $(ICONS_CHOICE)/emoticon_airplane.svg \
+  $(ICONS_CHOICE)/emoticon_angel.svg \
+  $(ICONS_CHOICE)/emoticon_arrogant.svg \
+  $(ICONS_CHOICE)/emoticon_asl.svg \
+  $(ICONS_CHOICE)/emoticon_bad.svg \
+  $(ICONS_CHOICE)/emoticon_baringteeth.svg \
+  $(ICONS_CHOICE)/emoticon_bat.svg \
+  $(ICONS_CHOICE)/emoticon_beer.svg \
+  $(ICONS_CHOICE)/emoticon_bowl.svg \
+  $(ICONS_CHOICE)/emoticon_boy.svg \
+  $(ICONS_CHOICE)/emoticon_cake.svg \
+  $(ICONS_CHOICE)/emoticon_cat.svg \
+  $(ICONS_CHOICE)/emoticon_cigaret.svg \
+  $(ICONS_CHOICE)/emoticon_clock.svg \
+  $(ICONS_CHOICE)/emoticon_confused.svg \
+  $(ICONS_CHOICE)/emoticon_cry.svg \
+  $(ICONS_CHOICE)/emoticon_cup.svg \
+  $(ICONS_CHOICE)/emoticon_devil.svg \
+  $(ICONS_CHOICE)/emoticon_dog.svg \
+  $(ICONS_CHOICE)/emoticon_dude_hug.svg \
+  $(ICONS_CHOICE)/emoticon_dunno.svg \
+  $(ICONS_CHOICE)/emoticon_embarrassed.svg \
+  $(ICONS_CHOICE)/emoticon_envelope.svg \
+  $(ICONS_CHOICE)/emoticon_eyeroll.svg \
+  $(ICONS_CHOICE)/emoticon_film.svg \
+  $(ICONS_CHOICE)/emoticon_girl.svg \
+  $(ICONS_CHOICE)/emoticon_girl_hug.svg \
+  $(ICONS_CHOICE)/emoticon_ip.svg \
+  $(ICONS_CHOICE)/emoticon_kiss.svg \
+  $(ICONS_CHOICE)/emoticon_lightning.svg \
+  $(ICONS_CHOICE)/emoticon_love.svg \
+  $(ICONS_CHOICE)/emoticon_megasmile.svg \
+  $(ICONS_CHOICE)/emoticon_moon.svg \
+  $(ICONS_CHOICE)/emoticon_nerd.svg \
+  $(ICONS_CHOICE)/emoticon_omg.svg \
+  $(ICONS_CHOICE)/emoticon_party.svg \
+  $(ICONS_CHOICE)/emoticon_pizza.svg \
+  $(ICONS_CHOICE)/emoticon_plate.svg \
+  $(ICONS_CHOICE)/emoticon_present.svg \
+  $(ICONS_CHOICE)/emoticon_rainbow.svg \
+  $(ICONS_CHOICE)/emoticon_sad.svg \
+  $(ICONS_CHOICE)/emoticon_sarcastic.svg \
+  $(ICONS_CHOICE)/emoticon_secret.svg \
+  $(ICONS_CHOICE)/emoticon_shade.svg \
+  $(ICONS_CHOICE)/emoticon_sick.svg \
+  $(ICONS_CHOICE)/emoticon_sleepy.svg \
+  $(ICONS_CHOICE)/emoticon_sorry.svg \
+  $(ICONS_CHOICE)/emoticon_sshh.svg \
+  $(ICONS_CHOICE)/emoticon_sun.svg \
+  $(ICONS_CHOICE)/emoticon_teeth.svg \
+  $(ICONS_CHOICE)/emoticon_thumbs_down.svg \
+  $(ICONS_CHOICE)/emoticon_thumbs_up.svg \
+  $(ICONS_CHOICE)/emoticon_tongue.svg \
+  $(ICONS_CHOICE)/emoticon_ugly.svg \
+  $(ICONS_CHOICE)/emoticon_ulove.svg \
+  $(ICONS_CHOICE)/emoticon_wink.svg
+
+NEWGUI_ICONS= \
+  $(ICONS_CHOICE)/extend_search.xpm \
+  $(ICONS_CHOICE)/local_search.xpm \
+  $(ICONS_CHOICE)/trash.xpm \
+  $(ICONS_CHOICE)/subscribe_search.xpm \
+  $(ICONS_CHOICE)/submit_search.xpm \
+  $(ICONS_CHOICE)/close_search.xpm \
+  $(ICONS_CHOICE)/stop_search.xpm \
+  $(ICONS_CHOICE)/nbk_networks_on.xpm \
+  $(ICONS_CHOICE)/nbk_networks_menu.xpm \
+  $(ICONS_CHOICE)/nbk_servers_on.xpm \
+  $(ICONS_CHOICE)/nbk_servers_menu.xpm \
+  $(ICONS_CHOICE)/nbk_downloads_on.xpm \
+  $(ICONS_CHOICE)/nbk_downloads_menu.xpm \
+  $(ICONS_CHOICE)/nbk_friends_on.xpm \
+  $(ICONS_CHOICE)/nbk_friends_menu.xpm \
+  $(ICONS_CHOICE)/nbk_search_on.xpm \
+  $(ICONS_CHOICE)/nbk_search_menu.xpm \
+  $(ICONS_CHOICE)/nbk_rooms_on.xpm \
+  $(ICONS_CHOICE)/nbk_rooms_menu.xpm \
+  $(ICONS_CHOICE)/nbk_uploads_on.xpm \
+  $(ICONS_CHOICE)/nbk_uploads_menu.xpm \
+  $(ICONS_CHOICE)/nbk_console_on.xpm \
+  $(ICONS_CHOICE)/nbk_console_menu.xpm \
+  $(ICONS_CHOICE)/nbk_graphs_on.xpm \
+  $(ICONS_CHOICE)/nbk_graphs_menu.xpm \
+  $(ICONS_CHOICE)/about.xpm \
+  $(ICONS_CHOICE)/settings.xpm \
+  $(ICONS_CHOICE)/exit.xpm \
+  $(ICONS_CHOICE)/gui.xpm \
+  $(ICONS_CHOICE)/kill_core.xpm \
+  $(ICONS_CHOICE)/splash_screen.xpm \
+  $(ICONS_CHOICE)/album_search.xpm \
+  $(ICONS_CHOICE)/movie_search.xpm \
+  $(ICONS_CHOICE)/mp3_search.xpm \
+  $(ICONS_CHOICE)/complex_search.xpm \
+  $(ICONS_CHOICE)/sharereactor_search.xpm \
+  $(ICONS_CHOICE)/jigle_search.xpm \
+  $(ICONS_CHOICE)/freedb_search.xpm \
+  $(ICONS_CHOICE)/imdb_search.xpm \
+  $(ICONS_CHOICE)/bt.xpm \
+  $(ICONS_CHOICE)/dc.xpm \
+  $(ICONS_CHOICE)/ed2k.xpm \
+  $(ICONS_CHOICE)/fasttrack.xpm \
+  $(ICONS_CHOICE)/gnutella.xpm \
+  $(ICONS_CHOICE)/napster.xpm \
+  $(ICONS_CHOICE)/slsk.xpm \
+  $(ICONS_CHOICE)/unknown.xpm \
+  $(ICONS_CHOICE)/downloading.xpm \
+  $(ICONS_CHOICE)/connect_y.xpm \
+  $(ICONS_CHOICE)/connect_m.xpm \
+  $(ICONS_CHOICE)/connect_n.xpm \
+  $(ICONS_CHOICE)/removedhost.xpm \
+  $(ICONS_CHOICE)/blacklistedhost.xpm \
+  $(ICONS_CHOICE)/files_listed.xpm \
+  $(ICONS_CHOICE)/server_c_high.xpm \
+  $(ICONS_CHOICE)/server_c_low.xpm \
+  $(ICONS_CHOICE)/server_ci.xpm \
+  $(ICONS_CHOICE)/server_nc.xpm \
+  $(ICONS_CHOICE)/toggle_display_all_servers.xpm \
+  $(ICONS_CHOICE)/view_pending_slots.xpm \
+  $(ICONS_CHOICE)/add_server.xpm \
+  $(ICONS_CHOICE)/add_shared_directory.xpm \
+  $(ICONS_CHOICE)/download_directory.xpm \
+  $(ICONS_CHOICE)/friend_user.xpm \
+  $(ICONS_CHOICE)/contact_user.xpm \
+  $(ICONS_CHOICE)/normal_user.xpm \
+  $(ICONS_CHOICE)/priority_0.xpm \
+  $(ICONS_CHOICE)/priority_1.xpm \
+  $(ICONS_CHOICE)/priority_2.xpm \
+  $(ICONS_CHOICE)/mimetype_binary.xpm \
+  $(ICONS_CHOICE)/mimetype_cdimage.xpm \
+  $(ICONS_CHOICE)/mimetype_debian.xpm \
+  $(ICONS_CHOICE)/mimetype_html.xpm \
+  $(ICONS_CHOICE)/mimetype_images.xpm \
+  $(ICONS_CHOICE)/mimetype_java.xpm \
+  $(ICONS_CHOICE)/mimetype_pdf.xpm \
+  $(ICONS_CHOICE)/mimetype_postscript.xpm \
+  $(ICONS_CHOICE)/mimetype_real.xpm \
+  $(ICONS_CHOICE)/mimetype_recycled.xpm \
+  $(ICONS_CHOICE)/mimetype_rpm.xpm \
+  $(ICONS_CHOICE)/mimetype_shellscript.xpm \
+  $(ICONS_CHOICE)/mimetype_soffice.xpm \
+  $(ICONS_CHOICE)/mimetype_sound.xpm \
+  $(ICONS_CHOICE)/mimetype_source.xpm \
+  $(ICONS_CHOICE)/mimetype_spreadsheet.xpm \
+  $(ICONS_CHOICE)/mimetype_tex.xpm \
+  $(ICONS_CHOICE)/mimetype_text.xpm \
+  $(ICONS_CHOICE)/mimetype_tgz.xpm \
+  $(ICONS_CHOICE)/mimetype_video.xpm \
+  $(ICONS_CHOICE)/mimetype_wordprocessing.xpm \
+  $(ICONS_CHOICE)/mimetype_unknown.xpm \
+  $(ICONS_CHOICE)/tree_closed.xpm \
+  $(ICONS_CHOICE)/tree_opened.xpm \
+  $(ICONS_CHOICE)/bt_net_on.xpm \
+  $(ICONS_CHOICE)/dc_net_on.xpm \
+  $(ICONS_CHOICE)/ed2k_net_on.xpm \
+  $(ICONS_CHOICE)/ftt_net_on.xpm \
+  $(ICONS_CHOICE)/gnut_net_on.xpm \
+  $(ICONS_CHOICE)/nap_net_on.xpm \
+  $(ICONS_CHOICE)/slsk_net_on.xpm \
+  $(ICONS_CHOICE)/mld_tux_on.xpm
+
+NEWGUI_SMALL_ICONS= \
+  icons/small/add_to_friends_small.xpm icons/small/cancel_small.xpm \
+  icons/small/connect_more_small.xpm icons/small/connect_small.xpm \
+  icons/small/disconnect_small.xpm icons/small/download_small.xpm \
+  icons/small/edit_mp3_small.xpm icons/small/extend_search_small.xpm \
+  icons/small/get_format_small.xpm icons/small/local_search_small.xpm \
+  icons/small/preview_small.xpm icons/small/refres_small.xpm \
+  icons/small/save_all_small.xpm icons/small/save_as_small.xpm icons/small/save_small.xpm \
+  icons/small/trash_small.xpm icons/small/verify_chunks_small.xpm \
+  icons/small/view_users_small.xpm
+
+OLDGUI_ICONS= \
+  $(ICONS_CHOICE)/add_to_friends.xpm \
+  $(ICONS_CHOICE)/cancel.xpm $(ICONS_CHOICE)/connect_more.xpm \
+  $(ICONS_CHOICE)/connect.xpm $(ICONS_CHOICE)/disconnect.xpm \
+  $(ICONS_CHOICE)/download.xpm \
+  $(ICONS_CHOICE)/edit_mp3.xpm $(ICONS_CHOICE)/extend_search.xpm \
+  $(ICONS_CHOICE)/get_format.xpm \
+  $(ICONS_CHOICE)/local_search.xpm $(ICONS_CHOICE)/preview.xpm \
+  $(ICONS_CHOICE)/refres.xpm \
+  $(ICONS_CHOICE)/save_all.xpm $(ICONS_CHOICE)/save_as.xpm \
+  $(ICONS_CHOICE)/save.xpm \
+  $(ICONS_CHOICE)/trash.xpm $(ICONS_CHOICE)/verify_chunks.xpm \
+  $(ICONS_CHOICE)/view_users.xpm \
+  $(ICONS_CHOICE)/pause_resume.xpm \
+  $(ICONS_CHOICE)/remove_all_friends.xpm 
+
+OLDGUI_SMALL_ICONS= \
+  icons/small/add_to_friends_small.xpm icons/small/cancel_small.xpm \
+  icons/small/connect_more_small.xpm icons/small/connect_small.xpm \
+  icons/small/disconnect_small.xpm icons/small/download_small.xpm \
+  icons/small/edit_mp3_small.xpm icons/small/extend_search_small.xpm \
+  icons/small/get_format_small.xpm icons/small/local_search_small.xpm \
+  icons/small/preview_small.xpm icons/small/refres_small.xpm \
+  icons/small/save_all_small.xpm icons/small/save_as_small.xpm icons/small/save_small.xpm \
+  icons/small/trash_small.xpm icons/small/verify_chunks_small.xpm \
+  icons/small/view_users_small.xpm
+
+ICONS= $($(GUI_CODE)_ICONS)
+SMALL_ICONS= $($(GUI_CODE)_SMALL_ICONS)
+
+ifeq ("$(GUI)", "newgui2")
+  ALL_ICONS=$(foreach file, $(ICONS),   $(basename $(file)).ml_icons)
+  ALL_ICONS_SRCS=$(foreach file, $(ICONS),   $(basename $(file))_svg.ml)
+else
+  ALL_ICONS=$(foreach file, $(ICONS),   $(basename $(file)).ml_icons)
+  ALL_ICONS_SRCS=$(foreach file, $(ICONS),   $(basename $(file))_xpm.ml)
+endif
+
+$(ALL_ICONS_SRCS): $(ALL_ICONS)
+
+ifeq ("$(GUI)", "newgui2")
+  GUI_BASE_SRCS= \
+    $(SRC_GUI)/guiUtf8.ml      $(SRC_GUI)/guiMessages.ml \
+    $(SRC_GUI)/guiColumns.ml   $(SRC_GUI)/graphTypes.ml \
+    $(SRC_GUI)/guiOptions.ml   $(SRC_GUI)/guiArt.ml \
+    $(SRC_GUI)/guiTools.ml     $(SRC_GUI)/guiTypes2.ml \
+    $(SRC_GUI)/guiTemplates.ml $(SRC_GUI)/configWindow.ml
+else
+  GUI_BASE_SRCS= \
+    $(SRC_GUI)/gui_messages.ml   $(SRC_GUI)/gui_global.ml \
+    $(SRC_GUI)/gui_columns.ml    $(SRC_GUI)/gui_keys.ml \
+    $(SRC_GUI)/gui_options.ml
+endif
+
+GTK2GUI_SRCS=  \
+  $(SRC_GUI)/guiNetHtmlScanner.mll \
+  $(SRC_GUI)/guiNetHtml.ml \
+  $(SRC_GUI)/guiGlobal.ml \
+  $(SRC_GUI)/guiMisc.ml \
+  $(SRC_GUI)/guiHtml.ml \
+  $(SRC_GUI)/guiCom.ml \
+  $(SRC_GUI)/guiStatusBar.ml \
+  $(SRC_GUI)/guiUsers.ml \
+  $(SRC_GUI)/guiResults.ml \
+  $(SRC_GUI)/guiInfoWindow.ml \
+  $(SRC_GUI)/guiGraphBase.ml \
+  $(SRC_GUI)/guiGraph.ml \
+  $(SRC_GUI)/guiDownloads.ml \
+  $(SRC_GUI)/guiServers.ml \
+  $(SRC_GUI)/guiQueries.ml \
+  $(SRC_GUI)/guiRooms.ml \
+  $(SRC_GUI)/guiConsole.ml \
+  $(SRC_GUI)/guiFriends.ml \
+  $(SRC_GUI)/guiUploads.ml \
+  $(SRC_GUI)/guiNetworks.ml \
+  $(SRC_GUI)/guiConfig.ml \
+  $(SRC_GUI)/guiWindow.ml
+
+ifeq ("$(OS_FILES2)", "mingw")
+  GTK2GUI_SRCS += $(SRC_GUI)/win32/systraystubs.c
+else
+  GTK2GUI_SRCS += $(SRC_GUI)/x11/eggtrayicon.c $(SRC_GUI)/x11/eggtrayicon.h $(SRC_GUI)/x11/systraystubs.c
+endif
+
+GTK2GUI_SRCS += \
+  $(SRC_GUI)/guiSystray.ml \
+  $(SRC_GUI)/guiMain.ml
+
+NEWGUI_SRCS=  \
+  $(SRC_PROGRESS)/gui_progress.ml \
+  $(SRC_GUI)/gui_misc.ml \
+  $(SRC_GUI)/gui_com.ml \
+  $(SRC_GUI)/gui_types.ml \
+  $(SRC_GUI)/gui_graph_base.ml $(SRC_GUI)/gui_graph.ml \
+  $(SRC_GUI)/gui_console_base.ml $(SRC_GUI)/gui_console.ml \
+  $(SRC_GUI)/gui_users_base.ml $(SRC_GUI)/gui_users.ml \
+  $(SRC_GUI)/gui_results_base.ml $(SRC_GUI)/gui_results.ml \
+  $(SRC_GUI)/gui_rooms_base.ml $(SRC_GUI)/gui_rooms.ml \
+  $(SRC_GUI)/gui_friends_base.ml $(SRC_GUI)/gui_friends.ml \
+  $(SRC_GUI)/gui_cdget_base.ml $(SRC_GUI)/gui_cdget.ml \
+  $(SRC_GUI)/gui_queries_base.ml $(SRC_GUI)/gui_queries.ml \
+  $(SRC_GUI)/gui_servers_base.ml $(SRC_GUI)/gui_servers.ml \
+  $(SRC_GUI)/gui_uploads_base.ml $(SRC_GUI)/gui_uploads.ml \
+  $(SRC_GUI)/gui_downloads_base.ml $(SRC_GUI)/gui_downloads.ml \
+  $(SRC_GUI)/gui_networks.ml \
+  $(SRC_GUI)/gui_window_base.ml $(SRC_GUI)/gui_window.ml \
+  $(SRC_GUI)/gui_config.ml \
+  $(SRC_GUI)/gui_main.ml
+
+PROGRESS_SRCS = \
+  $(SRC_PROGRESS)/gui_progress.ml \
+  $(SRC_GUI)/gui_misc.ml \
+  $(SRC_GUI)/gui_com.ml \
+  $(SRC_PROGRESS)/gui_progress_main.ml
+
+OLDGUI_SRCS=  \
+  $(SRC_GUI)/gui_misc.ml \
+  $(SRC_GUI)/gui_com.ml \
+  $(SRC_GUI)/gui_help_base.zog $(SRC_GUI)/gui_help.ml \
+  $(SRC_GUI)/gui_console_base.zog $(SRC_GUI)/gui_console.ml \
+  $(SRC_GUI)/gui_uploads_base.zog $(SRC_GUI)/gui_uploads.ml \
+  $(SRC_GUI)/gui_users_base.zog $(SRC_GUI)/gui_users.ml \
+  $(SRC_GUI)/gui_results_base.zog $(SRC_GUI)/gui_results.ml \
+  $(SRC_GUI)/gui_rooms_base.zog $(SRC_GUI)/gui_rooms.ml \
+  $(SRC_GUI)/gui_friends_base.zog $(SRC_GUI)/gui_friends.ml \
+  $(SRC_GUI)/gui_cdget_base.zog $(SRC_GUI)/gui_cdget.ml \
+  $(SRC_GUI)/gui_queries_base.ml $(SRC_GUI)/gui_queries.ml \
+  $(SRC_GUI)/gui_servers_base.zog $(SRC_GUI)/gui_servers.ml \
+  $(SRC_GUI)/gui_downloads_base.zog $(SRC_GUI)/gui_downloads.ml \
+  $(SRC_GUI)/gui_window_base.zog $(SRC_GUI)/gui_window.ml \
+  $(SRC_GUI)/gui_config.ml \
+  $(SRC_GUI)/gui_main.ml
+
+GUI_SRCS= $($(GUI_CODE)_SRCS)
+
+ifeq ("$(GUI)", "newgui2")
+  MLDONKEYGUI_CMXA= extlib.cmxa cdk.cmxa common.cmxa icons.cmxa guibase.cmxa gui.cmxa
+else
+  MLDONKEYGUI_CMXA= extlib.cmxa cdk.cmxa gmisc.cmxa common.cmxa icons.cmxa guibase.cmxa gui.cmxa
+endif
+
+MLDONKEYGUI_SRCS= $(MAIN_SRCS)
+
+ifeq ("$(GUI)", "newgui2")
+  STARTER_CMXA=extlib.cmxa cdk.cmxa common.cmxa icons.cmxa guibase.cmxa
+  STARTER_SRCS= $(SRC_GUI)/guiStarter.ml
+else
+  STARTER_CMXA=extlib.cmxa cdk.cmxa
+  STARTER_SRCS= $(SRC_GUI)/gui_starter.ml
+endif
+
+ifeq ("$(GUI)", "newgui2")
+  INSTALLER_CMXA= extlib.cmxa cdk.cmxa common.cmxa icons.cmxa guibase.cmxa
+else
+  INSTALLER_CMXA= extlib.cmxa cdk.cmxa gmisc.cmxa common.cmxa icons.cmxa guibase.cmxa
+endif
+
+ifeq ("$(GUI)", "newgui2")
+  INSTALLER_SRCS= \
+    $(SRC_GUI)/gui_installer_base.ml  $(SRC_GUI)/gui_installer.ml
+else
+  INSTALLER_SRCS= \
+    $(SRC_GUI)/gui_installer_base.zog $(SRC_GUI)/gui_installer.ml
+endif
+
+MLPROGRESS_CMXA= extlib.cmxa cdk.cmxa gmisc.cmxa common.cmxa icons.cmxa guibase.cmxa
+
+MLPROGRESS_SRCS = \
+  $(PROGRESS_SRCS) $(MAIN_SRCS)
+
+TARGETS += mlgui$(EXE) mlguistarter$(EXE)
+ifeq ("$(GUI)", "newgui1")
+  TARGETS += mlprogress$(EXE)
+endif
+
+TARGETS +=  mlnet+gui$(EXE)
+
+endif
+
+top: mldonkeytop
+runtop: top
+	./mldonkeytop $(INCLUDES)
+
+TOP_CMXA+=$(BITSTRING_CMA) extlib.cmxa cdk.cmxa magic.cmxa common.cmxa client.cmxa core.cmxa
+TOP_SRCS= 
+
+define([[EXPAND_LIB]],[[
+$1_ZOG := $(filter %.zog, $($1_SRCS)) 
+$1_MLL := $(filter %.mll, $($1_SRCS)) 
+$1_MLY := $(filter %.mly, $($1_SRCS)) 
+$1_ML4 := $(filter %.ml4, $($1_SRCS)) 
+$1_MLC4 := $(filter %.mlc4, $($1_SRCS)) 
+$1_MLT := $(filter %.mlt, $($1_SRCS)) 
+$1_MLP := $(filter %.mlcpp, $($1_SRCS)) 
+$1_ML := $(filter %.ml %.mll %.zog %.mly %.ml4 %.mlc4 %.mlt %.mlcpp, $($1_SRCS))
+$1_DOC := $(filter %.ml %.mll %.zog %.mly %.ml4 %.mlc4 %.mlcpp, $($1_SRCS))
+$1_C := $(filter %.c %.cc, $($1_SRCS)) 
+$1_CMOS=$(foreach file, $($1_ML),   $(basename $(file)).cmo) 
+$1_CMXS=$(foreach file, $($1_ML),   $(basename $(file)).cmx) 
+$1_OBJS=$(foreach file, $($1_C),   $(basename $(file)).o)    
+
+TMPSOURCES += $($1_ML4:.ml4=.ml) $($1_MLC4:.mlc4=.ml) $($1_MLT:.mlt=.ml) $($1_MLP:.mlcpp=.ml) $($1_MLL:.mll=.ml) $($1_MLY:.mly=.ml) $($1_MLY:.mly=.mli)  $($1_ZOG:.zog=.ml) 
+ 
+ZOGSOURCES +=  $($1_ZOG:.zog=.ml) 
+MLTSOURCES +=  $($1_MLT:.mlt=.ml)
+MLPSOURCES +=  $($1_MLP:.mlcpp=.ml)
+
+build/$2.cmxa: $($1_OBJS) $($1_CMXS) 
+	$(OCAMLOPT) -a -o $[[@]]  $($1_OBJS) $(LIBS_flags) $($3_LIBS_flags) $($1_CMXS) 
+ 
+build/$2.cma: $($1_OBJS) $($1_CMOS) 
+	$(OCAMLC) -a -o $[[@]]  $($1_OBJS) $(LIBS_flags) $($3_LIBS_flags) $($1_CMOS) 
+ 
+]])
+
+
+define(EXPAND_DRIVER,[[
+
+ifeq ("$($2)" , "yes")
+SUBDIRS += src/networks/$3
+
+CORE_SRCS += $($2_SRCS)
+
+endif
+
+ifeq ("$2", "DONKEY")
+$1_SRCS+= $(CRYPTOPP_SRCS)
+$1_CMXA+= $(BITSTRING_CMXA)
+$1+gui_CMXA+= $(BITSTRING_CMXA)
+else
+ifeq ("$2", "BITTORRENT")
+$1_CMXA+= $(BITSTRING_CMXA)
+$1+gui_CMXA+= $(BITSTRING_CMXA)
+endif
+endif
+
+$1_CMXA+= extlib.cmxa cdk.cmxa magic.cmxa common.cmxa client.cmxa $1.cmxa driver.cmxa
+
+$1_SRCS+= $(MAIN_SRCS)
+
+EXPAND_LIB($2,$1)
+
+ifeq ("$(GUI)", "newgui2")
+$1+gui_CMXA+=extlib.cmxa cdk.cmxa \
+   magic.cmxa common.cmxa client.cmxa $1.cmxa driver.cmxa \
+   icons.cmxa guibase.cmxa gui.cmxa
+else
+$1+gui_CMXA+=extlib.cmxa cdk.cmxa \
+   magic.cmxa common.cmxa client.cmxa $1.cmxa driver.cmxa \
+   gmisc.cmxa icons.cmxa guibase.cmxa gui.cmxa
+endif
+
+$1+gui_SRCS= $(MAIN_SRCS)
+
+]])
+
+EXPAND_DRIVER(mldc,DIRECT_CONNECT,direct_connect)
+EXPAND_DRIVER(mlnap,OPENNAP,opennap)
+EXPAND_DRIVER(mlgnut,GNUTELLA,gnutella)
+EXPAND_DRIVER(mlg2,GNUTELLA2,gnutella2)
+EXPAND_DRIVER(mlfasttrack,FASTTRACK,fasttrack)
+EXPAND_DRIVER(mlfileTP,FILETP,fileTP)
+EXPAND_DRIVER(mlbt,BITTORRENT,bittorrent)
+EXPAND_DRIVER(mldonkey,DONKEY,donkey)
+EXPAND_DRIVER(mlslsk,SOULSEEK,soulseek)
+
+libextlib_SRCS= $(EXTLIB_SRCS)
+libcdk_SRCS=  $(CDK_SRCS) $(LIB_SRCS) $(NET_SRCS) $(MP3TAG_SRCS)
+libmagic_SRCS= $(MAGIC_SRCS)
+libbitstring_SRCS= $(BITSTRING_SRCS)
+libcommon_SRCS= $(COMMON_SRCS)
+libclient_SRCS= $(COMMON_CLIENT_SRCS)
+ifeq ("$(GUI)", "newgui2")
+  libgmisc_SRCS=
+else
+  libgmisc_SRCS= $(CONFIGWIN_SRCS) $(MP3TAGUI_SRCS) $(OKEY_SRCS) $(GPATTERN_SRCS)
+endif
+libguibase_SRCS= $(GUI_BASE_SRCS)
+libgui_SRCS=   $(GUI_SRCS)
+libgui3_SRCS=   $(GUI3_SRCS)
+libicons_SRCS= $(ALL_ICONS_SRCS)
+
+EXPAND_LIB(libextlib,extlib)
+EXPAND_LIB(libicons,icons)
+EXPAND_LIB(libcdk,cdk)
+EXPAND_LIB(libmagic,magic)
+EXPAND_LIB(libbitstring,bitstring)
+EXPAND_LIB(libupnp_natpmp,upnp_natpmp)
+EXPAND_LIB(libcommon,common)
+EXPAND_LIB(libclient,client)
+EXPAND_LIB(DRIVER,driver)
+EXPAND_LIB(CORE,core)
+
+ifneq ("$(GUI)", "newgui2")
+  EXPAND_LIB(libgmisc,gmisc)
+endif
+
+EXPAND_LIB(libgui,gui)
+EXPAND_LIB(libguibase,guibase)
+
+
+######################################################################
+
+#         From sources to objects files
+
+######################################################################
+
+define([[EXPAND]],[[
+$1_ZOG := $(filter %.zog, $($1_SRCS)) 
+$1_MLL := $(filter %.mll, $($1_SRCS)) 
+$1_MLY := $(filter %.mly, $($1_SRCS)) 
+$1_ML4 := $(filter %.ml4, $($1_SRCS)) 
+$1_MLC4 := $(filter %.mlc4, $($1_SRCS)) 
+$1_MLT := $(filter %.mlt, $($1_SRCS)) 
+$1_MLP := $(filter %.mlcpp, $($1_SRCS)) 
+$1_ML := $(filter %.ml %.mll %.zog %.mly %.ml4 %.mlc4 %.mlt %.mlcpp, $($1_SRCS)) 
+$1_C := $(filter %.c %.cc, $($1_SRCS)) 
+$1_CMOS=$(foreach file, $($1_ML),   $(basename $(file)).cmo) 
+$1_CMXS=$(foreach file, $($1_ML),   $(basename $(file)).cmx) 
+$1_OBJS=$(foreach file, $($1_C),   $(basename $(file)).o)    
+
+$1_CMXAS := $(foreach file, $($1_CMXA),   build/$(basename $(file)).cmxa)
+$1_CMAS=$(foreach file, $($1_CMXA),   build/$(basename $(file)).cma)    
+
+TMPSOURCES += $($1_ML4:.ml4=.ml) $($1_MLC4:.mlc4=.ml) $($1_MLT:.mlt=.ml) $($1_MLP:.mlcpp=.ml) $($1_MLL:.mll=.ml) $($1_MLY:.mly=.ml) $($1_MLY:.mly=.mli) $($1_ZOG:.zog=.ml) 
+ 
+$2: $($1_OBJS) $($1_CMXS) $($1_CMXAS)
+	$(OCAMLOPT) -linkall -o $[[@]] \
+	$($1_OBJS) $(LIBS_opt) $(LIBS_flags) \
+	$($3_LIBS_opt) $($3_LIBS_flags) \
+	$($5_LIBS_opt) $($5_LIBS_flags) \
+	$($6_LIBS_opt) $($6_LIBS_flags) \
+	$($7_LIBS_opt) $($7_LIBS_flags) \
+	$($8_LIBS_opt) $($8_LIBS_flags) \
+	$($9_LIBS_opt) $($9_LIBS_flags) \
+	-I build $($1_CMXAS) $($1_CMXS) 
+ 
+$2.byte: $($1_OBJS) $($1_CMOS) $($1_CMAS)
+	$(OCAMLC) -linkall -o $[[@]] \
+	$($1_OBJS) $(LIBS_byte) $(LIBS_flags) \
+	$($3_LIBS_byte) $($3_LIBS_flags) \
+	$($5_LIBS_byte) $($5_LIBS_flags) \
+	$($6_LIBS_byte) $($6_LIBS_flags) \
+	$($7_LIBS_byte) $($7_LIBS_flags) \
+	$($8_LIBS_byte) $($8_LIBS_flags) \
+	$($9_LIBS_byte) $($9_LIBS_flags) \
+	-I build $($1_CMAS) $($1_CMOS) 
+ 
+$2.static: $($1_OBJS) $($1_CMXS) $($1_CMXAS)
+	$(OCAMLOPT) -linkall -ccopt -static -o $[[@]] \
+	$($1_OBJS) $(LIBS_opt) $(LIBS_flags) \
+	$($3_LIBS_flags) $($3_STATIC_LIBS_opt) \
+	$($5_LIBS_flags) $($5_STATIC_LIBS_opt) \
+	$($6_LIBS_flags) $($6_STATIC_LIBS_opt) \
+	$($7_LIBS_flags) $($7_STATIC_LIBS_opt) \
+	$($8_LIBS_flags) $($8_STATIC_LIBS_opt) \
+	$($9_LIBS_flags) $($9_STATIC_LIBS_opt) \
+	-I build $($1_CMXAS) $($1_CMXS)
+
+$2.byte.static: $($1_OBJS) $($1_CMOS) $($1_CMAS)
+	$(OCAMLC) -linkall -ccopt -static -o $[[@]] \
+	$($1_OBJS) $(LIBS_byte) $(LIBS_flags) \
+	$($3_LIBS_flags) $($3_STATIC_LIBS_opt) \
+	$($5_LIBS_flags) $($5_STATIC_LIBS_opt) \
+	$($6_LIBS_flags) $($6_STATIC_LIBS_opt) \
+	$($7_LIBS_flags) $($7_STATIC_LIBS_opt) \
+	$($8_LIBS_flags) $($8_STATIC_LIBS_opt) \
+	$($9_LIBS_flags) $($9_STATIC_LIBS_opt) \
+	-I build $($1_CMAS) $($1_CMOS) 
+]])
+
+# $1 = source-code collection
+# $2 = make target
+# $3 = GUI type (NO/GTK)
+# $4 = not used
+# $5 = if set link GD code
+# $6 = if set link CryptoPP code (only for targets mlnet, mldonkey)
+# $7 = if set link libmagic code (only for p2p core, not for GUIs, tools etc.)
+# $8 = if set link libbitstring code (only for Bittorrent p2p core)
+# $9 = if set link libminiupnpc & libnatpmp code
+
+EXPAND(mldonkey,mldonkey,NO,mldonkey,GD,CRYPTOPP,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(mldonkey+gui,mldonkey+gui,GTK,mldonkey+gui,GD,CRYPTOPP,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(MLPROGRESS, mlprogress,GTK, MLPROGRESS)
+EXPAND(MLDONKEYGUI,mlgui,GTK,MLDONKEYGUI)
+
+ifeq ("$(GUI)", "oldgui")
+ EXPAND(MLDONKEYGUI2,mlgui2,GTK,MLDONKEYGUI2)
+endif
+
+EXPAND(mldc,mldc,NO,mldc,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mldc+gui,mldc+gui,GTK,mldc+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlnap,mlnap,NO,mlnap,GD,NO,MAGIC,UPNP_NATPMP)
+EXPAND(mlnap+gui,mlnap+gui,GTK,mlnap+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(MLNET,mlnet,NO,MLNET,GD,CRYPTOPP,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(mlnet+gui,mlnet+gui,GTK,mlnet+gui,GD,CRYPTOPP,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(mlgnut,mlgnut,NO,mlgnut,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlgnut+gui,mlgnut+gui,GTK,mlgnut+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlg2,mlg2,NO,mlg2,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlg2+gui,mlg2+gui,GTK,mlg2+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlbt,mlbt,NO,mlbt,GD,NO,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(mlbt+gui,mlbt+gui,GTK,mlbt+gui,GD,NO,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(mlfasttrack,mlfasttrack,NO,mlfasttrack,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlfasttrack+gui,mlfasttrack+gui,GTK,mlfasttrack+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlfileTP,mlfiletp,NO,mlfileTP,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlfileTP+gui,mlfiletp+gui,GTK,mlfileTP+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlslsk,mlslsk,NO,mlslsk,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(mlslsk+gui,mlslsk+gui,GTK,mlslsk+gui,GD,NO,MAGIC,NO,UPNP_NATPMP)
+EXPAND(STARTER,mlguistarter,GTK)
+EXPAND(OBSERVER,observer)
+EXPAND(MLD_HASH,mld_hash)
+EXPAND(OCAMLPP,ocamlpp)
+EXPAND(MAKE_TORRENT,make_torrent,NO,NO,NO,NO,MAGIC,BITSTRING,UPNP_NATPMP)
+EXPAND(SUBCONV,subconv)
+EXPAND(MLSPLIT,mlsplit)
+EXPAND(CONTESTER,contester,CRYPT)
+EXPAND(SAFEEXEC,safeexec,CRYPT)
+EXPAND(GET_RANGE,get_range)
+EXPAND(COPYSOURCES,copysources)
+EXPAND(INSTALLER,mldonkey_installer,GTK,INSTALLER)
+EXPAND(MLPIC,mlpic)
+EXPAND(SPIDER,mlspider)
+EXPAND(DISASM,disasm,CURSES)
+EXPAND(ANALYSER1,analyser1,BIGARRAY)
+EXPAND(BTVIEW,btview)
+EXPAND(CLUSTER,cluster)
+EXPAND(TESTRSS,testrss)
+EXPAND(SVG_CONVERTER,svg_converter)
+EXPAND(TESTS,tests,NO,MLNET,GD,CRYPTOPP,MAGIC,BITSTRING,UPNP_NATPMP)
+
+#######################################################################
+
+##                      Other rules
+
+#######################################################################
+
+TOP_ZOG := $(filter %.zog, $(TOP_SRCS)) 
+TOP_MLL := $(filter %.mll, $(TOP_SRCS)) 
+TOP_MLY := $(filter %.mly, $(TOP_SRCS)) 
+TOP_ML4 := $(filter %.ml4, $(TOP_SRCS)) 
+TOP_ML := $(filter %.ml %.mll %.zog %.mly %.ml4, $(TOP_SRCS)) 
+TOP_C := $(filter %.c, $(TOP_SRCS)) 
+TOP_CMOS=$(foreach file, $(TOP_ML),   $(basename $(file)).cmo) 
+TOP_CMXS=$(foreach file, $(TOP_ML),   $(basename $(file)).cmx) 
+TOP_OBJS=$(foreach file, $(TOP_C),   $(basename $(file)).o)    
+
+TOP_CMXAS :=$(foreach file, $(TOP_CMXA),   build/$(basename $(file)).cmxa)    
+TOP_CMAS=$(foreach file, $(TOP_CMXA),   build/$(basename $(file)).cma)    
+
+TMPSOURCES += $(TOP_ML4:.ml4=.ml) $(TOP_MLL:.mll=.ml) $(TOP_MLY:.mly=.ml) $(TOP_MLY:.mly=.mli) $(TOP_ZOG:.zog=.ml) 
+
+mldonkeytop: $(TOP_OBJS) $(TOP_CMOS) $(TOP_CMAS)
+	$(OCAMLMKTOP) -linkall -o $@  \
+	$(TOP_OBJS) \
+	$(LIBS_byte) $(LIBS_flags) $(_LIBS_byte) $(_LIBS_flags) \
+	$(CRYPTOPP_LIBS_byte) $(CRYPTOPP_LIBS_flags) \
+	$(MAGIC_LIBS_byte) $(MAGIC_LIBS_flags) \
+	-I build $(TOP_CMAS) $(TOP_CMOS)
+
+
+#######################################################################
+
+##                      Other rules
+
+#######################################################################
+
+
+opt:  $(RESFILE) $(TMPSOURCES) $(TARGETS)
+
+byte:  $(TMPSOURCES) $(foreach target, $(TARGETS), $(target).byte)
+
+static: $(foreach target, $(TARGETS), $(target).static)
+
+ocamldoc: ocamldoc_html
+
+ocamldoc_html: $(CORE_DOC) $(libclient_DOC)
+	mkdir -p ocamldoc
+	$(OCAMLDOC) -sort -dump ocamldoc/ocamldocdump -html -d ocamldoc $(INCLUDES) $(libclient_DOC) $(CORE_DOC)
+
+$(LIB)/md4_cc.o: $(LIB)/md4.c
+	$(OCAMLC) -ccopt "$(CFLAGS) -O6 -o $(LIB)/md4_cc.o" -ccopt "" -c $(LIB)/md4.c
+
+$(CDK)/heap_c.o: $(CDK)/heap_c.c
+	$(OCAMLC) -ccopt "$(CFLAGS) $(MORECFLAGS) -o $(CDK)/heap_c.o" -ccopt "" -c $(CDK)/heap_c.c
+
+$(LIB)/md4_as.o: $(LIB)/md4_$(MD4ARCH).s
+	as -o $(LIB)/md4_as.o $(LIB)/md4_$(MD4ARCH).s
+
+$(LIB)/md4_comp.o: $(LIB)/md4_$(MD4COMP).o
+	cp -f $(LIB)/md4_$(MD4COMP).o $(LIB)/md4_comp.o
+
+
+zogml:
+	(for i in $(GUI_CODE)/gui*_base.zog ; do \
+		$(CAMLP4) pa_o.cmo pa_zog.cma pr_o.cmo -impl $$i > $(GUI_CODE)/`basename $$i zog`ml ;\
+	done)
+
+#######################################################################
+
+#                      Other rules
+
+#######################################################################
+
+TAGS:
+	otags -r .
+	etags -a `find . -name "*.[chs]" -o -name "*.cc"`
+
+clean: 
+	rm -f *.cm? donkey_* *.byte *.cm?? $(TARGETS) *~ TAGS *.o core *.static *.a
+	rm -f build/*.a build/*.cma build/*.cmxa
+	rm -f *_plugin
+	rm -f mldonkey mlgui mlnet.exe mlgui.exe mldonkeytop mldonkeytop.exe
+	rm -f mlbt mlbt+gui mlbt.exe
+	rm -f mlfiletp mlfiletp+gui mlfiletp.exe
+	rm -f mldc mldc+gui mldc.exe
+	rm -f mlfasttrack mlfasttrack+gui mlfasttrack.exe
+	rm -f svg_converter svg_converter.byte mld_hash make_torrent copysources get_range subconv testrss
+	rm -f svg_converter.exe mld_hash.exe make_torrent.exe copysources.exe get_range.exe subconv.exe testrss.exe
+	rm -f tests tests.exe
+	(for i in $(SUBDIRS); do \
+		rm -f  $$i/*.cm? $$i/*.o $$i/*.annot ; \
+	done)
+
+tmpclean: 
+	rm -f $(TMPSOURCES)
+
+moreclean: clean tmpclean
+
+releaseclean: clean moreclean
+	rm -f .depend
+	rm -rf patches/build
+	rm -f config/Makefile.config
+	rm -f config/mldonkey.rc
+	rm -f config/config.cache config/config.log config/config.status
+	rm -f config/config.h
+	rm -f config/confdefs.h
+	rm -rf config/autom4te.cache/
+	rm -f packages/rpm/*.spec
+	rm -f packages/rpm/Makefile
+	rm -f packages/slackware/mldonkey.options
+	rm -f packages/windows/mlnet.nsi
+	rm -f src/daemon/driver/driverGraphics.ml
+	rm -f src/networks/bittorrent/bTUdpTracker.ml
+	rm -f src/networks/donkey/donkeySui.ml
+	rm -f src/networks/donkey/donkeyNodesDat.ml
+	rm -f src/utils/bitstring/bitstring.ml
+	rm -f src/utils/bitstring/bitstring_persistent.ml
+	rm -f src/utils/lib/autoconf.ml
+	rm -f src/utils/lib/autoconf.ml.new
+	rm -f src/utils/lib/gAutoconf.ml
+	rm -f src/utils/lib/gAutoconf.ml.new
+	rm -f src/utils/lib/magic.ml
+	rm -f src/utils/lib/misc2.ml
+	rm -f src/utils/cdk/tar.ml
+	rm -f icons/tux/*.ml_icons
+	rm -f icons/tux/*.ml
+	rm -f icons/kde/*.ml_icons
+	rm -f icons/kde/*.ml
+	rm -f icons/mldonkey/*.ml_icons
+	rm -f icons/mldonkey/*.ml
+	rm -f icons/rsvg/*.ml_icons
+	rm -f icons/rsvg/*.ml
+	rm -f tools/zoggy/*.cm?
+	rm -rf ocamldoc
+	rm -rf mldonkey-distrib*
+	rm -f mldonkey-$(CURRENT_VERSION).*
+
+distclean: releaseclean
+	rm -rf patches/local
+	rm -rf mldonkey-distrib-*
+	rm -rf *.tar.bz2 
+
+maintainerclean: distclean
+	echo rm -f $(GUI_CODE)/gui.ml $(GUI_CODE)/gui_zog.ml
+	rm -f config/configure
+	rm -f Makefile
+
+.PHONY: TAGS clean tmpclean moreclean releaseclean distclean maintainerclean ocamldoc_html
+
+LOCAL=patches/build
+
+PA_ZOG_FILES=tools/zoggy/zog_types.ml tools/zoggy/zog_messages.ml tools/zoggy/zog_misc.ml tools/zoggy/pa_zog.ml
+
+pa_zog.cma: $(PA_ZOG_FILES)
+	$(OCAMLC) -I tools/zoggy -I +camlp4 -pp "$(CAMLP4OF) -loc loc" -a -o pa_zog.cma  $(PA_ZOG_FILES)
+
+
+OCAMLPP=./ocamlpp.byte
+
+$(ZOGSOURCES): pa_zog.cma
+$(MLTSOURCES): $(OCAMLPP)
+#$(TMPSOURCES): $(OCAMLPP)
+
+#ocamlpp.byte: tools/ocamlpp.ml
+#	$(OCAMLC) str.cma -o ocamlpp.byte tools/ocamlpp.ml
+
+ifeq ("$(GUI_CODE)", "OLDGUI")
+
+PA_ZOG: pa_zog.cma
+
+endif
+
+resfile.o:
+	windres -o resfile.o config/mldonkey.rc
+
+depend:   $(RESFILE) \
+	$(PA_ZOG) $(LIB)/http_lexer.ml $(TMPSOURCES)
+	@$(OCAMLDEP) $(OCAMLDEP_OPTIONS) $(patsubst -I +labl$(GTK),,$(INCLUDES)) *.ml *.mli > .depend
+	@(for i in $(SUBDIRS); do \
+		$(OCAMLDEP) $(OCAMLDEP_OPTIONS) $(patsubst -I +labl$(GTK),,$(INCLUDES)) $$i/*.ml $$i/*.mli  >> .depend; \
+		$(OCAMLPP) $$i/*.mlt  >> .depend; \
+	done)
+	@if test "$(GUI)" = "newgui2"; then \
+		$(MAKE) svg_converter.byte; \
+	fi
+
+$(LOCAL)/ocamlopt-$(REQUIRED_OCAML)/Makefile: patches/ocamlopt-$(REQUIRED_OCAML).tar.gz
+	rm -rf $(LOCAL)/ocamlopt-$(REQUIRED_OCAML)
+	mkdir -p $(LOCAL)
+	cd $(LOCAL); \
+	gzip -cd ../ocamlopt-$(REQUIRED_OCAML).tar.gz | tar xf -; \
+	touch ocamlopt-$(REQUIRED_OCAML)/Makefile
+
+$(LOCAL)/ocamlopt-$(REQUIRED_OCAML)/ocamlopt: $(LOCAL)/ocamlopt-$(REQUIRED_OCAML)/Makefile
+	cd $(LOCAL)/ocamlopt-$(REQUIRED_OCAML); $(MAKE)
+
+ifeq ("$(BITTORRENT)", "yes")
+MAKE_TORRENT=make_torrent
+MAKE_TORRENT_BYTE=$(MAKE_TORRENT).byte
+MAKE_TORRENT_STATIC=$(MAKE_TORRENT).static
+MAKE_TORRENT_BYTE_STATIC=$(MAKE_TORRENT_BYTE).static
+endif
+
+utils.byte: mld_hash.byte $(MAKE_TORRENT_BYTE) copysources.byte get_range.byte subconv.byte
+utils.opt: svg_converter mld_hash $(MAKE_TORRENT) copysources get_range subconv
+utils.opt.static: svg_converter mld_hash.static $(MAKE_TORRENT_STATIC) copysources.static get_range.static subconv.static
+utils.byte.static: mld_hash.byte.static $(MAKE_TORRENT_BYTE_STATIC) copysources.byte.static get_range.byte.static subconv.byte.static
+utils.static: 
+	if test "$(TARGET_TYPE)" = "byte"; then \
+		$(MAKE) utils.byte.static; \
+	else \
+		$(MAKE) utils.opt.static; \
+	fi
+utils: 
+	if test "$(TARGET_TYPE)" = "byte"; then \
+		$(MAKE) utils.byte; \
+	else \
+		$(MAKE) utils.opt; \
+	fi
+
+#######################################################################
+
+#                      Building binary distribs
+
+#######################################################################
+
+DISDIR=mldonkey-distrib
+#distrib/Readme.txt: $(GUI_CODE)/gui_messages.ml
+#	grep -A 1000 help_text $(GUI_CODE)/gui_messages.ml | grep -v '"' > distrib/Readme.txt
+
+
+debug:
+	rm -f $(CDK)/heap_c.o
+	MORECFLAGS="-I patches/ocaml-3.06/ -DHEAP_DUMP" $(MAKE) $(CDK)/heap_c.o
+	$(MAKE)
+
+RELEASE_TARGETS=mlnet 
+
+ifneq ("$(GUI)" , "no")
+RELEASE_TARGETS += mlgui mlnet+gui mlguistarter
+endif
+
+release.shared: opt
+	rm -rf mldonkey-*
+	cp -R distrib $(DISDIR)
+	for i in $(RELEASE_TARGETS); do \
+	   cp -f $$i $(DISDIR)/$$i && \
+	   if [ "$(SYSTEM)" != "macos" ]; then \
+	     strip $(DISDIR)/$$i; \
+	   fi \
+	done
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-$(CURRENT_VERSION).shared.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-$(CURRENT_VERSION).shared.$(MD4ARCH)-`uname -s`$(GLIBC_VERSION_ARCH).tar
+
+release.static: static opt
+	rm -rf mldonkey-*
+	cp -R distrib $(DISDIR)
+	for i in $(RELEASE_TARGETS); do \
+	   cp $$i.static $(DISDIR)/$$i && strip  $(DISDIR)/$$i; \
+	done
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+
+release.mlnet.static: mlnet.static
+	rm -rf mldonkey-*
+	cp -R distrib $(DISDIR)
+	cp mlnet.static $(DISDIR)/mlnet && strip $(DISDIR)/mlnet
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+
+release.mlnet.byte.static: mlnet.byte.static
+	rm -rf mldonkey-*
+	cp -R distrib $(DISDIR)
+	cp mlnet.byte.static $(DISDIR)/mlnet
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-$(CURRENT_VERSION).byte.static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-$(CURRENT_VERSION).byte.static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+
+release.mlnet.distri: mlnet mlnet.static
+	rm -rf mldonkey-*
+	cp -R distrib $(DISDIR)
+	for i in "mlnet mlnet.static"; do \
+	   cp -f $$i $(DISDIR)/$$i && \
+	   if [ "$(SYSTEM)" != "macos" ]; then \
+	     strip $(DISDIR)/$$i; \
+	   fi \
+	done
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+
+release.utils.shared: mld_hash $(MAKE_TORRENT)
+	rm -rf mldonkey-*
+	mkdir -p $(DISDIR)
+	for i in "mld_hash $(MAKE_TORRENT)"; do \
+	   cp -f $$i $(DISDIR)/$$i && \
+	   if [ "$(SYSTEM)" != "macos" ]; then \
+	     strip $(DISDIR)/$$i; \
+	   fi \
+	done
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-tools-$(CURRENT_VERSION).shared.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-tools-$(CURRENT_VERSION).shared.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+
+release.utils.static: mld_hash.static $(MAKE_TORRENT_STATIC)
+	rm -rf mldonkey-*
+	mkdir -p $(DISDIR)
+	cp -f mld_hash.static $(DISDIR)/mld_hash && strip  $(DISDIR)/mld_hash
+ifeq ("$(BITTORRENT)", "yes")
+	cp -f make_torrent.static $(DISDIR)/make_torrent && strip  $(DISDIR)/make_torrent
+endif
+	mv $(DISDIR) $(DISDIR)-$(CURRENT_VERSION)
+	tar cf $(DISDIR).tar $(DISDIR)-$(CURRENT_VERSION)
+	mv $(DISDIR).tar mldonkey-tools-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+	$(COMPRESS) mldonkey-tools-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`$(GLIBC_VERSION_ARCH).tar
+
+release.sources: 
+	rm -rf **/CVS
+	rm -f config/Makefile.config
+	cd ..; tar zcf mldonkey-$(CURRENT_VERSION).sources.tar.gz mldonkey
+
+distrib: $(DISDIR)
+
+$(DISDIR):  static distrib/Readme.txt
+	rm -rf mldonkey-*
+	cp -R distrib $(DISDIR)
+	rm -rf $(DISDIR)/CVS
+	for i in $(RELEASE_TARGETS); do \
+	   cp $$i.static $(DISDIR)/$$i && strip  $(DISDIR)/$$i; \
+	done
+	tar cf $(DISDIR).tar $(DISDIR)
+	mv $(DISDIR).tar mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`.tar
+	bzip2 mldonkey-$(CURRENT_VERSION).static.$(MD4ARCH)-`uname -s | sed "s/\//_/"`.tar
+
+SHADIR=mldonkey-shared
+
+shared: $(SHADIR)
+
+$(SHADIR):  static distrib/Readme.txt
+	rm -rf mldonkey-*
+	cp -R distrib $(SHADIR)
+	rm -rf $(SHADIR)/CVS
+	for i in $(RELEASE_TARGETS); do \
+	   cp $$i.static $(SHADIR)/$$i && strip  $(SHADIR)/$$i; \
+	done
+	tar cf $(SHADIR).tar $(SHADIR)
+	mv $(SHADIR).tar mldonkey-$(CURRENT_VERSION).shared.$(MD4ARCH)-`uname -s | sed "s/\//_/"`.tar
+	bzip2 mldonkey-$(CURRENT_VERSION).shared.$(MD4ARCH)-`uname -s | sed "s/\//_/"`.tar
+
+auto-release:
+## i386
+	mkdir -p $(HOME)/release-$(CURRENT_VERSION)
+	./configure --host=i386-pc-linux-gnu
+	rm -f mlnet mlnet.static mlnet+gui mlnet+gui.static $(LIB)/md4_comp.* $(LIB)/md4_as.*
+	$(MAKE) opt static
+	$(MAKE) distrib
+	cp mldonkey-$(CURRENT_VERSION).static.i386-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+	$(MAKE) shared
+	cp mldonkey-$(CURRENT_VERSION).shared.i386-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+## i686
+	mkdir -p $(HOME)/release-$(CURRENT_VERSION)
+	./configure --host=i686-pc-linux-gnu
+	rm -f  mlnet+gui mlnet+gui.static mlnet mlnet.static $(LIB)/md4_comp.* $(LIB)/md4_as.*
+	$(MAKE) opt static
+	$(MAKE) distrib
+	cp mldonkey-$(CURRENT_VERSION).static.i686-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+	$(MAKE) shared
+	cp mldonkey-$(CURRENT_VERSION).shared.i686-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+## i586
+	mkdir -p $(HOME)/release-$(CURRENT_VERSION)
+	./configure --host=i586-pc-linux-gnu
+	rm -f  mlnet+gui mlnet+gui.static mlnet mlnet.static $(LIB)/md4_comp.* $(LIB)/md4_as.*
+	$(MAKE) opt static
+	$(MAKE) distrib
+	cp mldonkey-$(CURRENT_VERSION).static.i586-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+	$(MAKE) shared
+	cp mldonkey-$(CURRENT_VERSION).shared.i586-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+## i486
+	mkdir -p $(HOME)/release-$(CURRENT_VERSION)
+	./configure --host=i486-pc-linux-gnu
+	rm -f  mlnet+gui mlnet+gui.static mlnet mlnet.static $(LIB)/md4_comp.* $(LIB)/md4_as.*
+	$(MAKE) opt static
+	$(MAKE) distrib
+	cp mldonkey-$(CURRENT_VERSION).static.i486-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+	$(MAKE) shared
+	cp mldonkey-$(CURRENT_VERSION).shared.i486-Linux.tar.bz2 $(HOME)/release-$(CURRENT_VERSION)/
+
+buildrpm: 
+	./configure --host=i586-pc-linux-gnu
+	$(MAKE) clean
+	$(MAKE) opt
+	rm -rf ../mldonkey-rpm rpm/mldonkey
+	rm -f rpm/mldonkey.sources.tar.bz2
+	cp -dpR . ../mldonkey-rpm
+	mv ../mldonkey-rpm rpm/mldonkey
+	cd rpm/mldonkey; rm -rf **/*.cm? **/*.o 
+	cd rpm; tar jcf mldonkey.sources.tar.bz2 mldonkey
+	rm -rf rpm/mldonkey
+
+
+
+sourcedist: copysources
+	./copysources
+	cp packages/rpm/mldonkey.spec /tmp/mldonkey/
+	cp packages/rpm/mldonkey.init /tmp/mldonkey/distrib/
+	cp packages/rpm/mldonkey.sysconfig /tmp/mldonkey/distrib/
+	cd /tmp; tar jcf /tmp/mldonkey.sources.tar.bz2 mldonkey
+	cp /tmp/mldonkey.sources.tar.bz2 .
+
+rpm: sourcedist
+	$(RPMBUILD) -ta mldonkey.sources.tar.bz2
+
+
+#######################################################################
+
+##              Specific rules
+
+#######################################################################
+
+
+-include .depend
+
+.SUFFIXES: .mli .ml .cmx .cmo .o .c .cmi .mll .mly .zog .plugindep .xpm .ml .cc .ml_icons .ml4 .mlc4 .mlt .mlii .mlcpp .svg
+
+.mli.cmi :
+	$(OCAMLC) $(INCLUDES) -c $<
+
+.ml.mlii :
+	rm -f $*.mli
+	$(OCAMLC) -i $(INCLUDES) -c $< > $*.mlii
+	mv $*.mlii $*.mli
+
+.ml.cmi :
+	$(OCAMLC) $(INCLUDES) -c $<
+
+.xpm.ml_icons :
+	echo "let t = [|" > $@
+	grep '"' $< | sed 's/",$$/";/' | sed 's/"};$$/"/' >> $@
+	echo "|]" >> $@
+	echo "let mini = [|" >> $@
+	grep '"' $*_mini.xpm | sed 's/",$$/";/' | sed 's/"};$$/"/' >> $@
+	echo "|]" >> $@
+	cp -f $@ $*_xpm.ml
+
+.svg.ml_icons :
+	cp $< $@
+	./svg_converter.byte $@
+
+.ml.cmx :
+	$(OCAMLOPT) $(DEVFLAGSOPT) $(DEVFLAGS) $(INCLUDES) -c $<
+
+.ml.cmo :
+	$(OCAMLC) $(DEVFLAGS) $(INCLUDES) -c $<
+
+.mlcpp.ml:
+	@cpp -P $< $(FIX_BROKEN_CPP) > $@
+
+%.ml: %.mlp $(BITSTRING)/pa_bitstring.cmo
+	$(CAMLP4OF) build/bitstring.cma $(BITSTRING)/bitstring_persistent.cmo $(BITSTRING)/pa_bitstring.cmo -impl $< -o $@
+
+.mll.ml :
+	@$(OCAMLLEX) -q $<
+
+.mly.ml :
+	@$(OCAMLYACC) $<
+
+.mly.mli:
+	@$(OCAMLYACC) $<
+
+.zog.ml:
+	@$(CAMLP4) pa_o.cmo ./pa_zog.cma pr_o.cmo -impl $< > $@
+
+.ml4.ml:
+	@echo '# 1 "$<"' > $@
+	@$(CAMLP4) pa_o.cmo pa_op.cmo pr_o.cmo -impl $< >> $@
+
+.mlc4.ml:
+	@$(CAMLP4OF) -I +camlp4 -impl $< -o $@
+
+.mlt.ml:
+	@$(OCAMLPP) -pp $< > $@
+
+.c.o :
+	$(OCAMLC) -verbose -ccopt "-I $(OCAML_SRC)/byterun -o $*.o" -ccopt "$(CFLAGS)" $(LIBS_flags) -c $<
+
+.cc.o :
+	$(CXX) $(CXXFLAGS) $(CRYPTOPPFLAGS) -o $*.o "-I$(OCAMLLIB)" -c $<
+
+.cmo.byte:
+	$(OCAMLC) -o $*.byte $(LIBS) $<
+
+.cmx.opt:
+	$(OCAMLOPT) -o $*.opt $(OPTLIBS) $<
+
+
+.plugindep:
+	echo toto
+
+src/utils/lib/sha1_c.o: src/utils/lib/sha1_c.h \
+  src/utils/lib/os_stubs.h
+
+src/daemon/common/commonHasher_c.o: src/utils/lib/sha1_c.h
+src/utils/lib/stubs_c.o: src/utils/lib/sha1_c.h

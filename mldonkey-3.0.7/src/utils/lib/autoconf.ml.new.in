@@ -1,0 +1,51 @@
+let perl_path = "@PERL@"
+let check_bounds = @CHECKBOUNDS@
+let current_version = "@MLDONKEY_VERSION@"
+let major_version = "@MAJOR_VERSION@"
+let minor_version = "@MINOR_VERSION@"
+let sub_version = "@SUB_VERSION@"
+let scm_version = "@SCM_VERSION@"
+let glibc_version = "@GLIBC_VERSION@"
+let cc_version = "@CC_VERSION@"
+let cxx_version = "@CXX_VERSION@"
+let build_system = "@BUILD_SYSTEM@"
+let configure_arguments = "@CONFIGURE_ARGUMENTS@"
+
+let system = "@SYSTEM@"
+let windows = system = "cygwin" || system = "mingw"
+
+let opennapster = "@OPEN_NAPSTER@"
+let gnutella = "@GNUTELLA@"
+let gnutella2 = "@GNUTELLA2@"
+let direct_connect = "@DIRECT_CONNECT@"
+let soulseek = "@SOULSEEK@"
+let openft = "@OPENFT@"
+let fasttrack = "@FASTTRACK@"
+let filetp = "@FILETP@"
+let bittorrent = "@BITTORRENT@"
+let donkey = "@DONKEY@"
+let donkey_sui = "@DONKEY_SUI@"
+let donkey_sui_urandom = ref false
+let donkey_sui_works () = donkey_sui = "yes" && !donkey_sui_urandom
+
+exception OutOfBoundsAccess
+let outofboundsaccess = OutOfBoundsAccess
+  
+let check_string s pos =
+  if check_bounds && pos >= String.length s then
+    raise outofboundsaccess
+  
+let check_array s pos =
+  if check_bounds && pos >= Array.length s then
+    raise outofboundsaccess
+
+let has_iconv = "@ICONV@" = "yes"
+
+let has_gd = "@GD@" = "yes"
+let has_gd_png = "@GD_PNG@" = "yes"
+let has_gd_jpg = "@GD_JPG@" = "yes"
+
+let bzip2 = "@BZIP2@" = "yes"
+let magic = "@MAGIC@" = "yes"
+let magic_works = ref false
+let upnp_natpmp = "@UPNP_NATPMP@" = "yes"
