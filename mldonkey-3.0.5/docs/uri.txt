@@ -1,0 +1,1 @@
+Get that document here: http://www.faqs.org/rfcs/rfc2396.html
