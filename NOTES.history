@@ -1,2 +1,6 @@
 export PATH=/opt/ocaml-cross-arm/bin:/usr/lib64/qt-3.3/bin:/usr/kerberos/sbin:/usr/kerberos/bin:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/proj/1470_Firmware_Source/buildroot-7821TSI/build_arm/staging_dir/usr/bin
+
 ./configure OCAMLC=/opt/ocaml-cross-arm/bin/ocamlopt OCAMLOPT=ocamlopt CC=arm-linux-uclibcgnueabi-gcc CPP="arm-linux-uclibcgnueabi-g++ -E" --host=x86_64-unknown-linux-gnu --target=arm-linux-uclibgnueabi
+
+builds a i686 mlnet:
+./configure CC="gcc -m32" CXX="g++ -m32" --build=x86_64-unknown-linux-gnu --host=arm-linux-uclibgnueabi
