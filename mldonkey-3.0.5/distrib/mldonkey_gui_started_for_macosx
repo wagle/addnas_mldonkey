@@ -1,6 +1,0 @@
-#! /bin/sh 
-
-DYLD_LIBRARY_PATH=/sw/lib 
-export DYLD_LIBRARY_PATH
-
-./mldonkey_gui & 

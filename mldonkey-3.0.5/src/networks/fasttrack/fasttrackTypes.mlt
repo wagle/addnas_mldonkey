@@ -1,4 +1,0 @@
-#where "gnutella_" = "fasttrack_"
-#where "_gnutella" = "_fasttrack"
-#where "Gnutella" = "Fasttrack"
-#include "src/networks/gnutella/gnutellaTypes.ml"
