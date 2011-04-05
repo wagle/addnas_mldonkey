@@ -1,0 +1,14 @@
+set -e
+LIBDIR=/opt/ocaml-3.12.0-wagle-armel-cross/lib/ocaml
+mkdir -p $LIBDIR/caml
+
+PUBLIC_INCLUDES="\
+  alloc.h callback.h config.h custom.h fail.h intext.h \
+  memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h"
+
+cd byterun
+for i in $PUBLIC_INCLUDES; do
+  echo "  install caml/$i"
+  sed -f ../tools/cleanup-header $i > $LIBDIR/caml/$i
+done
+cd .. 
