@@ -1,0 +1,12 @@
+YGREK's notes from
+  http://mldonkey.sourceforge.net/phpBB2/viewtopic.php?p=31393#31393
+
+To build: 
+
+PATH=/opt/ocaml-3.12.0/bin:$PATH ./configure --enable-debug OCAMLOPT=/opt/ocaml-3.12.0-wagle-armel-cross/bin/ocamlopt --host=arm-linux-gnueabi --disable-gd
+echo DEVFLAGS=-verbose >> config/Makefile.config
+PATH=/opt/ocaml-3.12.0/bin:$PATH make
+
+During build ranlib and ar are called (directly, not cross versions) but this doesn't seem to cause problems.
+
+PS In order to cross-compile for bytecode-only archs (like MIPS) one would also need ocamlc bytecode cross-compiler or hack the C compiler invocation when building stubs..
